@@ -1,0 +1,16 @@
+.wrapper {
+  display: flex;
+}
+
+.user {
+  justify-content: flex-end;
+}
+
+.assistant {
+  justify-content: flex-start;
+}
+
+.bubble {
+  max-width: 75%;
+  padding: 0.5rem 1rem;
+}
