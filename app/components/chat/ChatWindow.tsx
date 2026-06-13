@@ -26,7 +26,9 @@ export default function ChatWindow() {
   return (
     <div className={styles.window}>
       <MessageList messages={messages} />
-      <MessageInput onSend={handleSend} />
+      <div className={styles.input}>
+        <MessageInput onSend={handleSend} />
+      </div>
     </div>
   );
 }
