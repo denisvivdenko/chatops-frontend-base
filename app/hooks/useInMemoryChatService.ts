@@ -44,9 +44,9 @@ export function useInMemoryChatService() {
       setActiveChatId(chatId);
     } else {
       setChats(prev =>
-        prev.map(c =>
-          c.id === chatId ? { ...c, lastMessage: content, lastActivityAt: now } : c
-        )
+        prev
+          .map(c => c.id === chatId ? { ...c, lastMessage: content, lastActivityAt: now } : c)
+          .sort((a, b) => b.lastActivityAt - a.lastActivityAt)
       );
     }
 
