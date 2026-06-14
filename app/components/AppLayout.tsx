@@ -11,7 +11,9 @@ export default function AppLayout() {
 
   return (
     <div className={styles.layout}>
-      <Sidebar />
+      <div className={styles.sidebar}>
+        <Sidebar />
+      </div>
       <ChatPane onMenuOpenAction={() => setIsMenuOpen(true)} />
       {isMenuOpen && <MobileMenu onCloseAction={() => setIsMenuOpen(false)} />}
     </div>
