@@ -1,5 +1,5 @@
 .header {
-  display: none;
+  display: flex;
   justify-content: flex-end;
   padding: 0.5rem 0.75rem;
   background: transparent;
@@ -22,10 +22,4 @@
 .menuBtn:hover {
   background: #2e2e2e;
   color: #fff;
-}
-
-@media (max-width: 768px) {
-  .header {
-    display: flex;
-  }
 }
