@@ -27,7 +27,15 @@ export default function AppLayout() {
         onSendMessageAction={sendMessage}
         onMenuOpenAction={() => setIsMenuOpen(true)}
       />
-      {isMenuOpen && <MobileMenu onCloseAction={() => setIsMenuOpen(false)} />}
+      {isMenuOpen && (
+        <MobileMenu
+          chats={chats}
+          activeChatId={activeChatId}
+          onNewChatAction={startNewChat}
+          onSelectChatAction={selectChat}
+          onCloseAction={() => setIsMenuOpen(false)}
+        />
+      )}
     </div>
   );
 }
