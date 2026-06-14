@@ -4,18 +4,18 @@ import { useRef, useState } from 'react';
 import styles from './MessageInput.module.css';
 
 type MessageInputProps = {
-  onSend: (content: string) => void;
+  onSendAction: (content: string) => void;
   disabled?: boolean;
 };
 
-export default function MessageInput({ onSend, disabled }: MessageInputProps) {
+export default function MessageInput({ onSendAction, disabled }: MessageInputProps) {
   const [value, setValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSend = () => {
     const trimmed = value.trim();
     if (!trimmed) return;
-    onSend(trimmed);
+    onSendAction(trimmed);
     setValue('');
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';

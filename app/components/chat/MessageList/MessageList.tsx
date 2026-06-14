@@ -1,14 +1,10 @@
 import { useEffect, useRef } from 'react';
-import Message from '../Message/Message';
+import type { Message } from '../../../types/chat';
+import MessageComponent from '../Message/Message';
 import styles from './MessageList.module.css';
 
-type MessageItem = {
-  role: 'user' | 'assistant';
-  content: string;
-};
-
 type MessageListProps = {
-  messages: MessageItem[];
+  messages: Message[];
 };
 
 export default function MessageList({ messages }: MessageListProps) {
@@ -21,8 +17,8 @@ export default function MessageList({ messages }: MessageListProps) {
   return (
     <div className={styles.list}>
       <div className={styles.inner}>
-        {messages.map((msg, i) => (
-          <Message key={i} role={msg.role} content={msg.content} />
+        {messages.map(msg => (
+          <MessageComponent key={msg.id} message={msg} />
         ))}
         <div ref={bottomRef} />
       </div>

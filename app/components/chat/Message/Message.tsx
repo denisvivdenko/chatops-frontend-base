@@ -1,23 +1,23 @@
 import ReactMarkdown from 'react-markdown';
+import type { Message } from '../../../types/chat';
 import styles from './Message.module.css';
 
 type MessageProps = {
-  role: 'user' | 'assistant';
-  content: string;
+  message: Message;
 };
 
-export default function Message({ role, content }: MessageProps) {
-  if (role === 'user') {
+export default function Message({ message }: MessageProps) {
+  if (message.role === 'user') {
     return (
       <div className={styles.userWrapper}>
-        <div className={styles.bubble}>{content}</div>
+        <div className={styles.bubble}>{message.content}</div>
       </div>
     );
   }
 
   return (
     <div className={styles.assistantWrapper}>
-      <ReactMarkdown>{content}</ReactMarkdown>
+      <ReactMarkdown>{message.content}</ReactMarkdown>
     </div>
   );
 }
