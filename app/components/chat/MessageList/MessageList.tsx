@@ -20,10 +20,12 @@ export default function MessageList({ messages }: MessageListProps) {
 
   return (
     <div className={styles.list}>
-      {messages.map((msg, i) => (
-        <Message key={i} role={msg.role} content={msg.content} />
-      ))}
-      <div ref={bottomRef} />
+      <div className={styles.inner}>
+        {messages.map((msg, i) => (
+          <Message key={i} role={msg.role} content={msg.content} />
+        ))}
+        <div ref={bottomRef} />
+      </div>
     </div>
   );
 }
