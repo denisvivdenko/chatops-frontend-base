@@ -27,3 +27,9 @@
   background: #2e2e2e;
   color: #fff;
 }
+
+@media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+}
