@@ -1,3 +1,27 @@
+/*
+  Theme color variables
+  ─────────────────────────────────────────────
+  --color-text          all primary text/icons
+  --color-text-muted    blockquote text
+  --color-bg            mobile menu, input
+  --color-bg-subtle     hover states, bubble, code blocks
+  --color-bg-muted      inline code
+  --color-border        sidebar, input, mobile menu
+  --color-accent        send button
+  --color-border-subtle markdown <hr>
+  ─────────────────────────────────────────────
+*/
+:root {
+  --color-text: #111;
+  --color-text-muted: #666;
+  --color-bg: #fff;
+  --color-bg-subtle: #f4f4f4;
+  --color-bg-muted: #f0f0f0;
+  --color-border: #e0e0e0;
+  --color-border-subtle: #e8e8e8;
+  --color-accent: #000;
+}
+
 *,
 *::before,
 *::after {

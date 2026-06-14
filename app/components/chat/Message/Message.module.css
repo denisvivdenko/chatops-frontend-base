@@ -6,7 +6,7 @@
 .bubble {
   max-width: 75%;
   padding: 0.625rem 1rem;
-  background-color: #f4f4f4;
+  background-color: var(--color-bg-subtle);
   border-radius: 1.25rem;
   overflow-wrap: break-word;
   word-break: break-word;
@@ -46,20 +46,20 @@
 }
 
 .assistantWrapper :global(blockquote) {
-  border-left: 3px solid #e0e0e0;
+  border-left: 3px solid var(--color-border);
   margin: 0.75rem 0;
   padding: 0 0.75rem;
-  color: #666;
+  color: var(--color-text-muted);
 }
 
 .assistantWrapper :global(hr) {
   border: none;
-  border-top: 1px solid #e8e8e8;
+  border-top: 1px solid var(--color-border-subtle);
   margin: 1rem 0;
 }
 
 .assistantWrapper :global(code) {
-  background: #f0f0f0;
+  background: var(--color-bg-muted);
   border-radius: 0.3rem;
   padding: 0.1em 0.4em;
   font-size: 0.875em;
@@ -67,7 +67,7 @@
 }
 
 .assistantWrapper :global(pre) {
-  background: #f4f4f4;
+  background: var(--color-bg-subtle);
   border-radius: 0.75rem;
   padding: 1rem;
   overflow-x: auto;

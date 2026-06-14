@@ -4,7 +4,7 @@
   gap: 0.25rem;
   width: 52px;
   padding: 0.75rem 0.5rem;
-  border-right: 1px solid #e0e0e0;
+  border-right: 1px solid var(--color-border);
   flex-shrink: 0;
   overflow: hidden;
   transition: width 0.2s ease;
@@ -23,16 +23,15 @@
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: #111;
+  color: var(--color-text);
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s;
   text-align: left;
 }
 
 .item:hover {
-  background: #f4f4f4;
-  color: #111;
+  background: var(--color-bg-subtle);
 }
 
 .icon {
@@ -49,4 +48,3 @@
   opacity: 1;
   transition-delay: 0.1s;
 }
-
