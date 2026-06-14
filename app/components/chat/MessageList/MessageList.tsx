@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import Message from './Message';
+import Message from '../Message/Message';
 import styles from './MessageList.module.css';
 
 type MessageItem = {

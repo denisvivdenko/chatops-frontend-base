@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import ChatHeader from './ChatHeader';
-import MessageList from './MessageList';
-import MessageInput from './MessageInput';
+import ChatHeader from '../ChatHeader/ChatHeader';
+import MessageList from '../MessageList/MessageList';
+import MessageInput from '../MessageInput/MessageInput';
 import styles from './ChatPane.module.css';
 
 type Message = {

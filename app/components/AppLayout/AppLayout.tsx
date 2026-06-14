@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import Sidebar from './navigation/Sidebar';
-import ChatPane from './chat/ChatPane';
-import MobileMenu from './navigation/MobileMenu';
+import Sidebar from '../navigation/Sidebar/Sidebar';
+import ChatPane from '../chat/ChatPane/ChatPane';
+import MobileMenu from '../navigation/MobileMenu/MobileMenu';
 import styles from './AppLayout.module.css';
 
 export default function AppLayout() {
