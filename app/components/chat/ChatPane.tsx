@@ -30,7 +30,9 @@ export default function ChatPane({ onMenuOpenAction }: Props) {
 
   return (
     <div className={styles.pane}>
-      <ChatHeader onMenuOpenAction={onMenuOpenAction} />
+      <div className={styles.headerBar}>
+        <ChatHeader onMenuOpenAction={onMenuOpenAction} />
+      </div>
       <MessageList messages={messages} />
       <div className={styles.inputBar}>
         <MessageInput onSend={handleSend} />

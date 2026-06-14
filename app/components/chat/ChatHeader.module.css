@@ -1,14 +1,8 @@
 .header {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
   display: none;
   justify-content: flex-end;
   padding: 0.5rem 0.75rem;
-  z-index: 10;
   background: transparent;
-  flex-shrink: 0;
 }
 
 .menuBtn {
