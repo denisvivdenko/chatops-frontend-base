@@ -17,7 +17,32 @@ type Props = {
 
 export default function ChatPane({ onMenuOpenAction }: Props) {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: 'Hello! How can I help you today?' },
+    { role: 'user', content: 'Can you give me a quick overview of React hooks?' },
+    {
+      role: 'assistant',
+      content: `## React Hooks Overview
+
+Hooks let you use state and other React features in **function components**.
+
+### Most commonly used hooks
+
+- \`useState\` — local component state
+- \`useEffect\` — side effects (data fetching, subscriptions)
+- \`useRef\` — mutable ref that doesn't trigger re-renders
+- \`useContext\` — consume a React context
+
+### Example
+
+\`\`\`ts
+const [count, setCount] = useState(0);
+
+useEffect(() => {
+  document.title = \`Count: \${count}\`;
+}, [count]);
+\`\`\`
+
+> Hooks must be called at the top level — never inside loops, conditions, or nested functions.`,
+    },
   ]);
 
   const handleSend = (content: string) => {

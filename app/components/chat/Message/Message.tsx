@@ -1,3 +1,4 @@
+import ReactMarkdown from 'react-markdown';
 import styles from './Message.module.css';
 
 type MessageProps = {
@@ -6,12 +7,17 @@ type MessageProps = {
 };
 
 export default function Message({ role, content }: MessageProps) {
-  const isUser = role === 'user';
-  return (
-    <div className={`${styles.wrapper} ${isUser ? styles.user : styles.assistant}`}>
-      <div className={styles.bubble}>
-        {content}
+  if (role === 'user') {
+    return (
+      <div className={styles.userWrapper}>
+        <div className={styles.bubble}>{content}</div>
       </div>
+    );
+  }
+
+  return (
+    <div className={styles.assistantWrapper}>
+      <ReactMarkdown>{content}</ReactMarkdown>
     </div>
   );
 }
