@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import ChatList from '../ChatList/ChatList';
 import type { Chat } from '../../../types/chat';
 import styles from './Sidebar.module.css';
 
@@ -34,26 +35,13 @@ export default function Sidebar({
       </button>
 
       {expanded && (
-        <div className={styles.chatList}>
-          <button
-            className={`${styles.chatItem} ${activeChatId === null ? styles.chatItemActive : ''}`}
-            onClick={onNewChatAction}
-          >
-            <svg className={styles.icon} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            <span className={styles.chatItemText}>New chat</span>
-          </button>
-          {chats.map(chat => (
-            <button
-              key={chat.id}
-              className={`${styles.chatItem} ${chat.id === activeChatId ? styles.chatItemActive : ''}`}
-              onClick={() => onSelectChatAction(chat.id)}
-              title={chat.title}
-            >
-              <span className={styles.chatItemText}>{chat.title}</span>
-            </button>
-          ))}
+        <div className={styles.chatListWrapper}>
+          <ChatList
+            chats={chats}
+            activeChatId={activeChatId}
+            onNewChatAction={onNewChatAction}
+            onSelectChatAction={onSelectChatAction}
+          />
         </div>
       )}
     </aside>

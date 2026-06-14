@@ -1,0 +1,48 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  height: 2.5rem;
+  min-width: 0;
+  flex-shrink: 0;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+  overflow: hidden;
+  font-size: 0.875em;
+}
+
+.item:hover {
+  background: var(--color-bg-subtle);
+}
+
+.itemActive {
+  background: var(--color-bg-subtle);
+}
+
+.icon {
+  flex-shrink: 0;
+}
+
+.itemText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
+}
