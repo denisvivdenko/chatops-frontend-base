@@ -38,34 +38,28 @@ export default function MobileMenu({
           </svg>
         </button>
       </div>
-      <nav className={styles.nav}>
-        <button className={styles.item} onClick={handleNewChat}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          New chat
-        </button>
 
-        {chats.length > 0 && (
-          <div className={styles.chatList}>
-            {activeChatId === null && (
-              <div className={`${styles.chatItem} ${styles.chatItemActive}`}>
-                New chat
-              </div>
-            )}
-            {chats.map(chat => (
-              <button
-                key={chat.id}
-                className={`${styles.chatItem} ${chat.id === activeChatId ? styles.chatItemActive : ''}`}
-                onClick={() => handleSelectChat(chat.id)}
-                title={chat.title}
-              >
-                {chat.title}
-              </button>
-            ))}
-          </div>
-        )}
-      </nav>
+      <div className={styles.chatList}>
+        <button
+          className={`${styles.chatItem} ${activeChatId === null ? styles.chatItemActive : ''}`}
+          onClick={handleNewChat}
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0 }}>
+            <path d="M7 2v10M2 7h10" />
+          </svg>
+          <span className={styles.chatItemText}>New chat</span>
+        </button>
+        {chats.map(chat => (
+          <button
+            key={chat.id}
+            className={`${styles.chatItem} ${chat.id === activeChatId ? styles.chatItemActive : ''}`}
+            onClick={() => handleSelectChat(chat.id)}
+            title={chat.title}
+          >
+            <span className={styles.chatItemText}>{chat.title}</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

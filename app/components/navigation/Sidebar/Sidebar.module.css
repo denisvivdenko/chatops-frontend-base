@@ -39,7 +39,6 @@
 }
 
 .label {
-  font-size: 0.875rem;
   opacity: 0;
   transition: opacity 0.1s ease;
 }
@@ -55,26 +54,30 @@
   gap: 0.125rem;
   overflow-y: auto;
   flex: 1;
-  padding-top: 0.25rem;
-  border-top: 1px solid var(--color-border-subtle);
-  margin-top: 0.25rem;
 }
 
 .chatItem {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
   width: 100%;
   padding: 0.5rem;
   border: none;
   border-radius: 6px;
   background: transparent;
   color: var(--color-text);
-  font-size: 0.8125rem;
   cursor: pointer;
   text-align: left;
-  white-space: nowrap;
+  transition: background 0.15s;
+  overflow: hidden;
+}
+
+.chatItemText {
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: background 0.15s;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
 }
 
 .chatItem:hover {
