@@ -5,13 +5,77 @@
 
 .bubble {
   max-width: 75%;
-  padding: 0.5rem 1rem;
-  background-color: #e9e9e9;
-  border-radius: 1rem;
+  padding: 0.625rem 1rem;
+  background-color: #f4f4f4;
+  border-radius: 1.25rem;
   overflow-wrap: break-word;
   word-break: break-word;
+  line-height: 1.6;
 }
 
 .assistantWrapper {
   width: 100%;
+  line-height: 1.6;
+}
+
+.assistantWrapper :global(p) {
+  margin: 0 0 0.75rem;
+}
+
+.assistantWrapper :global(p:last-child) {
+  margin-bottom: 0;
+}
+
+.assistantWrapper :global(h1),
+.assistantWrapper :global(h2),
+.assistantWrapper :global(h3),
+.assistantWrapper :global(h4) {
+  margin: 1.25rem 0 0.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.assistantWrapper :global(ul),
+.assistantWrapper :global(ol) {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.assistantWrapper :global(li) {
+  margin: 0.3rem 0;
+}
+
+.assistantWrapper :global(blockquote) {
+  border-left: 3px solid #e0e0e0;
+  margin: 0.75rem 0;
+  padding: 0 0.75rem;
+  color: #666;
+}
+
+.assistantWrapper :global(hr) {
+  border: none;
+  border-top: 1px solid #e8e8e8;
+  margin: 1rem 0;
+}
+
+.assistantWrapper :global(code) {
+  background: #f0f0f0;
+  border-radius: 0.3rem;
+  padding: 0.1em 0.4em;
+  font-size: 0.875em;
+  font-family: ui-monospace, monospace;
+}
+
+.assistantWrapper :global(pre) {
+  background: #f4f4f4;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 0.75rem 0;
+}
+
+.assistantWrapper :global(pre code) {
+  background: none;
+  padding: 0;
+  font-size: 0.875em;
 }
