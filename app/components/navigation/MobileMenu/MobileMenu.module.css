@@ -2,7 +2,7 @@
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: #1a1a1a;
+  background: #fff;
   display: flex;
   flex-direction: column;
 }
@@ -12,6 +12,7 @@
   justify-content: flex-end;
   padding: 0.5rem 0.75rem;
   flex-shrink: 0;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .closeBtn {
@@ -23,21 +24,20 @@
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: #a0a0a0;
+  color: #111;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s;
 }
 
 .closeBtn:hover {
-  background: #2e2e2e;
-  color: #fff;
+  background: #f4f4f4;
 }
 
 .nav {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  padding: 0 0.5rem;
+  padding: 0.5rem;
 }
 
 .item {
@@ -49,14 +49,13 @@
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: #a0a0a0;
+  color: #111;
   font-size: 0.875rem;
   cursor: pointer;
   text-align: left;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s;
 }
 
 .item:hover {
-  background: #2e2e2e;
-  color: #fff;
+  background: #f4f4f4;
 }

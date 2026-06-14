@@ -14,12 +14,11 @@
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: #a0a0a0;
+  color: #111;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s;
 }
 
 .menuBtn:hover {
-  background: #2e2e2e;
-  color: #fff;
+  background: #f4f4f4;
 }
