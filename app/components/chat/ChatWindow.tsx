@@ -4,6 +4,7 @@ import { useState } from 'react';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import Sidebar from './Sidebar';
+import ChatHeader from './ChatHeader';
 import styles from './ChatWindow.module.css';
 
 type Message = {
@@ -28,8 +29,11 @@ export default function ChatWindow() {
     <div className={styles.window}>
       <Sidebar />
       <div className={styles.chat}>
+        <ChatHeader />
         <MessageList messages={messages} />
-        <MessageInput onSend={handleSend} />
+        <div className={styles.inputBar}>
+          <MessageInput onSend={handleSend} />
+        </div>
       </div>
     </div>
   );
