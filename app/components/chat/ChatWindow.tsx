@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
-import Sidebar from './Sidebar';
+import Sidebar from '../navigation/Sidebar';
 import ChatHeader from './ChatHeader';
-import MobileMenu from './MobileMenu';
+import MobileMenu from '../navigation/MobileMenu';
 import styles from './ChatWindow.module.css';
 
 type Message = {
