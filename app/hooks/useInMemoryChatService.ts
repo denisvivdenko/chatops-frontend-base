@@ -59,11 +59,7 @@ export function useInMemoryChatService() {
       createdAt: now,
     };
 
-    const assistantMessage: Message = {
-      id: generateId(),
-      chatId: chatId!,
-      role: 'assistant',
-      content: `Here's a quick summary of what I can help with:
+    const fullResponse = `Here's a quick summary of what I can help with:
 
 ## Markdown support
 
@@ -89,8 +85,15 @@ function greet(name: string): string {
 
 ---
 
-Let me know what you'd like to explore next.`,
-      status: 'complete',
+Let me know what you'd like to explore next.`;
+
+    const assistantMessageId = generateId();
+    const assistantMessage: Message = {
+      id: assistantMessageId,
+      chatId: chatId!,
+      role: 'assistant',
+      content: '',
+      status: 'pending',
       createdAt: now + 1,
     };
 
@@ -98,6 +101,35 @@ Let me know what you'd like to explore next.`,
       ...prev,
       [chatId!]: [...(prev[chatId!] ?? []), userMessage, assistantMessage],
     }));
+
+    const words = fullResponse.split(' ');
+    let wordIndex = 0;
+
+    function appendNextWord() {
+      if (wordIndex >= words.length) {
+        setMessagesByChat(prev => ({
+          ...prev,
+          [chatId!]: (prev[chatId!] ?? []).map(m =>
+            m.id === assistantMessageId ? { ...m, status: 'complete' } : m
+          ),
+        }));
+        return;
+      }
+
+      const word = words[wordIndex++];
+      setMessagesByChat(prev => ({
+        ...prev,
+        [chatId!]: (prev[chatId!] ?? []).map(m =>
+          m.id === assistantMessageId
+            ? { ...m, content: m.content ? m.content + ' ' + word : word }
+            : m
+        ),
+      }));
+
+      setTimeout(appendNextWord, 100);
+    }
+
+    setTimeout(appendNextWord, 400);
   }
 
   return {

@@ -18,6 +18,7 @@ export default function Message({ message }: MessageProps) {
   return (
     <div className={styles.assistantWrapper}>
       <ReactMarkdown>{message.content}</ReactMarkdown>
+      {message.status === 'pending' && <span className={styles.cursor} />}
     </div>
   );
 }
