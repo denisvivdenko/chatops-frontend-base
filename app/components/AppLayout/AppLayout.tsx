@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Sidebar from '../navigation/Sidebar/Sidebar';
+import TopBar from '../TopBar/TopBar';
 import ChatPane from '../chat/ChatPane/ChatPane';
 import MobileMenu from '../navigation/MobileMenu/MobileMenu';
 import { useInMemoryChatService } from '../../hooks/useInMemoryChatService';
@@ -22,11 +23,15 @@ export default function AppLayout() {
           onSelectChatAction={selectChat}
         />
       </div>
-      <ChatPane
-        messages={activeMessages}
-        onSendMessageAction={sendMessage}
-        onMenuOpenAction={() => setIsMenuOpen(true)}
-      />
+      <div className={styles.main}>
+        <div className={styles.headerBar}>
+          <TopBar onMenuOpenAction={() => setIsMenuOpen(true)} />
+        </div>
+        <ChatPane
+          messages={activeMessages}
+          onSendMessageAction={sendMessage}
+        />
+      </div>
       {isMenuOpen && (
         <MobileMenu
           chats={chats}
