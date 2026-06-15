@@ -6,10 +6,10 @@ import styles from './MessageInput.module.css';
 
 type MessageInputProps = {
   onSendAction: (content: string) => void;
-  disabled?: boolean;
+  disableSend?: boolean;
 };
 
-export default function MessageInput({ onSendAction, disabled }: MessageInputProps) {
+export default function MessageInput({ onSendAction, disableSend }: MessageInputProps) {
   const [value, setValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -48,14 +48,13 @@ export default function MessageInput({ onSendAction, disabled }: MessageInputPro
           value={value}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          disabled={disabled}
         />
         {/* right slot — future home of mic and other actions */}
         <div className={styles.rightActions}>
           <button
             className={styles.sendButton}
             onClick={handleSend}
-            disabled={disabled || !value.trim()}
+            disabled={disableSend || !value.trim()}
             aria-label="Send message"
           >
             <ArrowUp size={16} strokeWidth={2} />

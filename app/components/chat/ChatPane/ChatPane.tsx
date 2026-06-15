@@ -11,13 +11,16 @@ type Props = {
 };
 
 export default function ChatPane({ messages, onSendMessageAction }: Props) {
+  const lastMessage = messages[messages.length - 1];
+  const isPending = lastMessage?.status === 'pending';
+
   return (
     <div className={styles.pane}>
       <div className={styles.messageArea}>
         <MessageList messages={messages} />
       </div>
       <div className={styles.inputBar}>
-        <MessageInput onSendAction={onSendMessageAction} />
+        <MessageInput onSendAction={onSendMessageAction} disableSend={isPending} />
       </div>
     </div>
   );
