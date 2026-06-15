@@ -1,3 +1,4 @@
+import { Plus } from 'lucide-react';
 import type { Chat } from '../../../types/chat';
 import styles from './ChatList.module.css';
 
@@ -20,9 +21,7 @@ export default function ChatList({
         className={`${styles.item} ${activeChatId === null ? styles.itemActive : ''}`}
         onClick={onNewChatAction}
       >
-        <svg className={styles.icon} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 5v14M5 12h14" />
-        </svg>
+        <Plus className={styles.icon} size={20} strokeWidth={1} />
         <span className={styles.itemText}>New chat</span>
       </button>
       {chats.map(chat => (

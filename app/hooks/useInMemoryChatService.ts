@@ -63,7 +63,33 @@ export function useInMemoryChatService() {
       id: generateId(),
       chatId: chatId!,
       role: 'assistant',
-      content: 'This is a placeholder response.',
+      content: `Here's a quick summary of what I can help with:
+
+## Markdown support
+
+This response demonstrates **bold**, *italic*, and \`inline code\`.
+
+### Lists
+
+- Unordered items work fine
+- As do nested concepts
+
+1. Ordered lists too
+2. With multiple entries
+
+### Code blocks
+
+\`\`\`ts
+function greet(name: string): string {
+  return \`Hello, \${name}!\`;
+}
+\`\`\`
+
+> Blockquotes are also supported for callouts or citations.
+
+---
+
+Let me know what you'd like to explore next.`,
       status: 'complete',
       createdAt: now + 1,
     };

@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { ArrowUp } from 'lucide-react';
 import styles from './MessageInput.module.css';
 
 type MessageInputProps = {
@@ -57,15 +58,7 @@ export default function MessageInput({ onSendAction, disabled }: MessageInputPro
             disabled={disabled || !value.trim()}
             aria-label="Send message"
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path
-                d="M8 12V4M8 4L4 8M8 4L12 8"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <ArrowUp size={16} strokeWidth={2} />
           </button>
         </div>
       </div>
