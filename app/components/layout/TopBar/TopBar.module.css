@@ -13,12 +13,12 @@
   height: 36px;
   border: none;
   border-radius: 6px;
-  background: transparent;
+  background: var(--color-bg-subtle);
   color: var(--color-text);
   cursor: pointer;
   transition: background 0.15s;
 }
 
 .menuBtn:hover {
-  background: var(--color-bg-subtle);
+  background: var(--color-bg-muted);
 }
