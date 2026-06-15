@@ -10,7 +10,6 @@ export interface Message {
 export interface Chat {
   id: string;
   title: string;
-  lastMessage?: string;
   lastActivityAt: number;
   createdAt: number;
 }

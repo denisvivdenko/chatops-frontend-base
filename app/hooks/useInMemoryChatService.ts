@@ -36,7 +36,6 @@ export function useInMemoryChatService() {
       const newChat: Chat = {
         id: chatId,
         title: truncateTitle(content),
-        lastMessage: content,
         lastActivityAt: now,
         createdAt: now,
       };
@@ -45,7 +44,7 @@ export function useInMemoryChatService() {
     } else {
       setChats(prev =>
         prev
-          .map(c => c.id === chatId ? { ...c, lastMessage: content, lastActivityAt: now } : c)
+          .map(c => c.id === chatId ? { ...c, lastActivityAt: now } : c)
           .sort((a, b) => b.lastActivityAt - a.lastActivityAt)
       );
     }
