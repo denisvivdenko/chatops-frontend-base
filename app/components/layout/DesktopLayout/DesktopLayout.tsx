@@ -1,5 +1,5 @@
-import type { Chat } from '../../types/chat';
-import Sidebar from '../navigation/Sidebar/Sidebar';
+import type { Chat } from '../../../types/chat';
+import Sidebar from '../../navigation/Sidebar/Sidebar';
 import styles from './DesktopLayout.module.css';
 
 type Props = {

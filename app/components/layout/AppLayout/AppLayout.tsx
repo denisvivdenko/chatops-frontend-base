@@ -1,10 +1,10 @@
 'use client';
 
-import { useInMemoryChatService } from '../../hooks/useInMemoryChatService';
-import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { useInMemoryChatService } from '../../../hooks/useInMemoryChatService';
+import { useMediaQuery } from '../../../hooks/useMediaQuery';
 import DesktopLayout from '../DesktopLayout/DesktopLayout';
 import MobileLayout from '../MobileLayout/MobileLayout';
-import ChatPane from '../chat/ChatPane/ChatPane';
+import ChatPane from '../../chat/ChatPane/ChatPane';
 import styles from './AppLayout.module.css';
 
 export default function AppLayout() {

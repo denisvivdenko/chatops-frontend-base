@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import type { Chat } from '../../types/chat';
+import type { Chat } from '../../../types/chat';
 import TopBar from '../TopBar/TopBar';
-import MobileMenu from '../navigation/MobileMenu/MobileMenu';
+import MobileMenu from '../../navigation/MobileMenu/MobileMenu';
 import styles from './MobileLayout.module.css';
 
 type Props = {
