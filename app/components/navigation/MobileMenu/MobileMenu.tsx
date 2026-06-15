@@ -11,6 +11,8 @@ type Props = {
   onNewChatAction(): void;
   onSelectChatAction(id: string): void;
   onCloseAction(): void;
+  isClosing?: boolean;
+  onAnimationEndAction?(): void;
 };
 
 export default function MobileMenu({
@@ -19,6 +21,8 @@ export default function MobileMenu({
   onNewChatAction,
   onSelectChatAction,
   onCloseAction,
+  isClosing,
+  onAnimationEndAction,
 }: Props) {
   function handleNewChat() {
     onNewChatAction();
@@ -30,8 +34,15 @@ export default function MobileMenu({
     onCloseAction();
   }
 
+  function handleAnimationEnd(e: React.AnimationEvent<HTMLDivElement>) {
+    if (e.target === e.currentTarget) onAnimationEndAction?.();
+  }
+
   return (
-    <div className={styles.menu}>
+    <div
+      className={`${styles.menu} ${isClosing ? styles.closing : ''}`}
+      onAnimationEnd={handleAnimationEnd}
+    >
       <div className={styles.header}>
         <button className={styles.closeBtn} aria-label="Close menu" onClick={onCloseAction}>
           <X size={20} />

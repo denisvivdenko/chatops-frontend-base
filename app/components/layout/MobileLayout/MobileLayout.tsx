@@ -14,6 +14,8 @@ type Props = {
   children: React.ReactNode;
 };
 
+type MenuState = 'closed' | 'open' | 'closing';
+
 export default function MobileLayout({
   chats,
   activeChatId,
@@ -21,21 +23,31 @@ export default function MobileLayout({
   onSelectChatAction,
   children,
 }: Props) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [menuState, setMenuState] = useState<MenuState>('closed');
+
+  function handleClose() {
+    setMenuState('closing');
+  }
+
+  function handleAnimationEnd() {
+    if (menuState === 'closing') setMenuState('closed');
+  }
 
   return (
     <div className={styles.main}>
       <div className={styles.headerBar}>
-        <TopBar onMenuOpenAction={() => setIsMenuOpen(true)} />
+        <TopBar onMenuOpenAction={() => setMenuState('open')} />
       </div>
       {children}
-      {isMenuOpen && (
+      {menuState !== 'closed' && (
         <MobileMenu
           chats={chats}
           activeChatId={activeChatId}
           onNewChatAction={onNewChatAction}
           onSelectChatAction={onSelectChatAction}
-          onCloseAction={() => setIsMenuOpen(false)}
+          onCloseAction={handleClose}
+          isClosing={menuState === 'closing'}
+          onAnimationEndAction={handleAnimationEnd}
         />
       )}
     </div>
