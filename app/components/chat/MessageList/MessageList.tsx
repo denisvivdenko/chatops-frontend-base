@@ -15,13 +15,11 @@ export default function MessageList({ messages }: MessageListProps) {
   }, [messages]);
 
   return (
-    <div className={styles.list}>
-      <div className={styles.inner}>
-        {messages.map(msg => (
-          <MessageComponent key={msg.id} message={msg} />
-        ))}
-        <div ref={bottomRef} />
-      </div>
+    <div className={styles.inner}>
+      {messages.map(msg => (
+        <MessageComponent key={msg.id} message={msg} />
+      ))}
+      <div ref={bottomRef} />
     </div>
   );
 }
