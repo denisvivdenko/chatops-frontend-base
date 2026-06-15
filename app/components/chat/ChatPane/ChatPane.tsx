@@ -18,7 +18,9 @@ export default function ChatPane({ messages, onSendMessageAction, onMenuOpenActi
       <div className={styles.headerBar}>
         <ChatHeader onMenuOpenAction={onMenuOpenAction} />
       </div>
-      <MessageList messages={messages} />
+      <div className={styles.messageArea}>
+        <MessageList messages={messages} />
+      </div>
       <div className={styles.inputBar}>
         <MessageInput onSendAction={onSendMessageAction} />
       </div>
