@@ -1,6 +1,6 @@
 'use client';
 
-import { useInMemoryChatService } from '../../../hooks/useInMemoryChatService';
+import { useBackendChatService } from '../../../hooks/useBackendChatService';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
 import DesktopLayout from '../DesktopLayout/DesktopLayout';
 import MobileLayout from '../MobileLayout/MobileLayout';
@@ -9,7 +9,7 @@ import styles from './AppLayout.module.css';
 
 export default function AppLayout() {
   const { chats, activeChatId, activeMessages, startNewChat, selectChat, sendMessage } =
-    useInMemoryChatService();
+    useBackendChatService();
   const isMobile = useMediaQuery('(max-width: 768px)');
 
   const Layout = isMobile ? MobileLayout : DesktopLayout;

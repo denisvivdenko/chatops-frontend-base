@@ -51,7 +51,6 @@ export function useInMemoryChatService() {
 
     const userMessage: Message = {
       id: generateId(),
-      chatId: chatId!,
       role: 'user',
       content,
       status: 'complete',
@@ -89,7 +88,6 @@ Let me know what you'd like to explore next.`;
     const assistantMessageId = generateId();
     const assistantMessage: Message = {
       id: assistantMessageId,
-      chatId: chatId!,
       role: 'assistant',
       content: '',
       status: 'pending',
