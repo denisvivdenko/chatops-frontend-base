@@ -26,7 +26,7 @@ export default function MessageInput({ onSendAction, disableSend }: MessageInput
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      if (!disableSend) handleSend();
     }
   };
 
