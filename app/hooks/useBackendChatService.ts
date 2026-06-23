@@ -58,8 +58,19 @@ export function useBackendChatService() {
   }, []);
 
   useEffect(() => {
-    const promise = activeChatId === null ? Promise.resolve<Message[]>([]) : fetchMessages(activeChatId);
-    promise.then(setActiveMessages);
+    if (activeChatId === null) {
+      setActiveMessages([]);
+      return;
+    }
+    fetchMessages(activeChatId).then(messages => {
+      const pendingAssistant = messages.find(m => m.role === 'assistant' && m.status === 'pending');
+      if (pendingAssistant) {
+        setActiveMessages(messages.map(m => m.id === pendingAssistant.id ? { ...m, content: '' } : m));
+        streamAssistantMessage(activeChatId, pendingAssistant.id);
+      } else {
+        setActiveMessages(messages);
+      }
+    });
   }, [activeChatId]);
 
   function startNewChat() {
