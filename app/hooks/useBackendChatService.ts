@@ -50,7 +50,8 @@ async function fetchMessages(chatId: string): Promise<Message[]> {
 export function useBackendChatService() {
   const [chats, setChats] = useState<Chat[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
-  const [activeMessages, setActiveMessages] = useState<Message[]>([]);
+  const [_activeMessages, setActiveMessages] = useState<Message[]>([]);
+  const activeMessages = activeChatId === null ? [] : _activeMessages;
   const streamAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -59,7 +60,6 @@ export function useBackendChatService() {
 
   useEffect(() => {
     if (activeChatId === null) {
-      setActiveMessages([]);
       return;
     }
     fetchMessages(activeChatId).then(messages => {
