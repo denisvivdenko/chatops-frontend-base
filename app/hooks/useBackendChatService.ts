@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Chat, Message } from '../types/chat';
 
-const BASE = 'http://localhost:8000';
+
 
 function mapMessage(raw: {
   id: string;
@@ -35,19 +35,19 @@ function mapChat(raw: {
   };
 }
 
-async function fetchChats(): Promise<Chat[]> {
-  const res = await fetch(`${BASE}/chats?limit=50`);
+async function fetchChats(baseUrl: string): Promise<Chat[]> {
+  const res = await fetch(`${baseUrl}/chats?limit=50`);
   const data = await res.json();
   return data.map(mapChat);
 }
 
-async function fetchMessages(chatId: string): Promise<Message[]> {
-  const res = await fetch(`${BASE}/chats/${chatId}/messages`);
+async function fetchMessages(baseUrl: string, chatId: string): Promise<Message[]> {
+  const res = await fetch(`${baseUrl}/chats/${chatId}/messages`);
   const data = await res.json();
   return data.map(mapMessage);
 }
 
-export function useBackendChatService() {
+export function useBackendChatService(baseUrl: string) {
   const [chats, setChats] = useState<Chat[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [_activeMessages, setActiveMessages] = useState<Message[]>([]);
@@ -55,14 +55,14 @@ export function useBackendChatService() {
   const streamAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    fetchChats().then(setChats);
-  }, []);
+    fetchChats(baseUrl).then(setChats);
+  }, [baseUrl]);
 
   useEffect(() => {
     if (activeChatId === null) {
       return;
     }
-    fetchMessages(activeChatId).then(messages => {
+    fetchMessages(baseUrl, activeChatId).then(messages => {
       const pendingAssistant = messages.find(m => m.role === 'assistant' && m.status === 'pending');
       if (pendingAssistant) {
         setActiveMessages(messages.map(m => m.id === pendingAssistant.id ? { ...m, content: '' } : m));
@@ -88,7 +88,7 @@ export function useBackendChatService() {
     const abort = new AbortController();
     streamAbortRef.current = abort;
 
-    const url = `${BASE}/chats/${chatId}/messages/${assistantMessageId}/stream`;
+    const url = `${baseUrl}/chats/${chatId}/messages/${assistantMessageId}/stream`;
     const eventSource = new EventSource(url);
 
     eventSource.onmessage = (e) => {
@@ -117,7 +117,7 @@ export function useBackendChatService() {
             : m
         )
       );
-      fetchChats().then(setChats);
+      fetchChats(baseUrl).then(setChats);
     };
   }
 
@@ -125,7 +125,7 @@ export function useBackendChatService() {
     const isNewChat = activeChatId === null;
 
     if (isNewChat) {
-      const res = await fetch(`${BASE}/chats`, {
+      const res = await fetch(`${baseUrl}/chats`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: content }),
@@ -135,7 +135,7 @@ export function useBackendChatService() {
       setChats(prev => [chat, ...prev]);
       setActiveChatId(chat.id);
 
-      const messages = await fetchMessages(chat.id);
+      const messages = await fetchMessages(baseUrl, chat.id);
       setActiveMessages(messages);
 
       const assistantMessage = messages.find(m => m.role === 'assistant' && m.status === 'pending');
@@ -153,7 +153,7 @@ export function useBackendChatService() {
         createdAt: Date.now(),
       };
 
-      const res = await fetch(`${BASE}/chats/${chatId}/messages`, {
+      const res = await fetch(`${baseUrl}/chats/${chatId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content }),

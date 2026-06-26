@@ -7,9 +7,9 @@ import MobileLayout from '../MobileLayout/MobileLayout';
 import ChatPane from '../../chat/ChatPane/ChatPane';
 import styles from './AppLayout.module.css';
 
-export default function AppLayout() {
+export default function AppLayout({ backendUrl }: { backendUrl: string }) {
   const { chats, activeChatId, activeMessages, startNewChat, selectChat, sendMessage } =
-    useBackendChatService();
+    useBackendChatService(backendUrl);
   const isMobile = useMediaQuery('(max-width: 768px)');
 
   const Layout = isMobile ? MobileLayout : DesktopLayout;
