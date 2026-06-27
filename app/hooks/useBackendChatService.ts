@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Chat, Message } from '../types/chat';
 
 
@@ -54,34 +54,7 @@ export function useBackendChatService(baseUrl: string) {
   const activeMessages = activeChatId === null ? [] : _activeMessages;
   const streamAbortRef = useRef<AbortController | null>(null);
 
-  useEffect(() => {
-    fetchChats(baseUrl).then(setChats);
-  }, [baseUrl]);
-
-  useEffect(() => {
-    if (activeChatId === null) {
-      return;
-    }
-    fetchMessages(baseUrl, activeChatId).then(messages => {
-      const pendingAssistant = messages.find(m => m.role === 'assistant' && m.status === 'pending');
-      if (pendingAssistant) {
-        setActiveMessages(messages.map(m => m.id === pendingAssistant.id ? { ...m, content: '' } : m));
-        streamAssistantMessage(activeChatId, pendingAssistant.id);
-      } else {
-        setActiveMessages(messages);
-      }
-    });
-  }, [activeChatId]);
-
-  function startNewChat() {
-    setActiveChatId(null);
-  }
-
-  function selectChat(id: string) {
-    setActiveChatId(id);
-  }
-
-  function streamAssistantMessage(chatId: string, assistantMessageId: string) {
+  const streamAssistantMessage = useCallback(function streamAssistantMessage(chatId: string, assistantMessageId: string) {
     if (streamAbortRef.current) {
       streamAbortRef.current.abort();
     }
@@ -119,6 +92,33 @@ export function useBackendChatService(baseUrl: string) {
       );
       fetchChats(baseUrl).then(setChats);
     };
+  }, [baseUrl]);
+
+  useEffect(() => {
+    fetchChats(baseUrl).then(setChats);
+  }, [baseUrl]);
+
+  useEffect(() => {
+    if (activeChatId === null) {
+      return;
+    }
+    fetchMessages(baseUrl, activeChatId).then(messages => {
+      const pendingAssistant = messages.find(m => m.role === 'assistant' && m.status === 'pending');
+      if (pendingAssistant) {
+        setActiveMessages(messages.map(m => m.id === pendingAssistant.id ? { ...m, content: '' } : m));
+        streamAssistantMessage(activeChatId, pendingAssistant.id);
+      } else {
+        setActiveMessages(messages);
+      }
+    });
+  }, [activeChatId, baseUrl, streamAssistantMessage]);
+
+  function startNewChat() {
+    setActiveChatId(null);
+  }
+
+  function selectChat(id: string) {
+    setActiveChatId(id);
   }
 
   async function sendMessage(content: string) {
