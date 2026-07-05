@@ -9,6 +9,7 @@
   --color-border        sidebar, input, mobile menu
   --color-accent        send button
   --color-border-subtle markdown <hr>
+  --color-danger        failed message error text/retry button
   ─────────────────────────────────────────────
 */
 :root {
@@ -20,6 +21,7 @@
   --color-border: #e0e0e0;
   --color-border-subtle: #e8e8e8;
   --color-accent: #000;
+  --color-danger: #c0392b;
 }
 
 *,

@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Chat, Message } from '../types/chat';
 
-
+const MAX_RECONNECT_ATTEMPTS = 3;
+const RECONNECT_DELAY_MS = 500;
 
 function mapMessage(raw: {
   id: string;
@@ -54,19 +55,15 @@ export function useBackendChatService(baseUrl: string) {
   const activeMessages = activeChatId === null ? [] : _activeMessages;
   const streamAbortRef = useRef<AbortController | null>(null);
 
-  const streamAssistantMessage = useCallback(function streamAssistantMessage(chatId: string, assistantMessageId: string) {
-    if (streamAbortRef.current) {
-      streamAbortRef.current.abort();
-    }
+  const attemptStream = useCallback(function attemptStream(chatId: string, messageId: string, attempt: number) {
+    streamAbortRef.current?.abort();
     const abort = new AbortController();
     streamAbortRef.current = abort;
 
-    const url = `${baseUrl}/chats/${chatId}/messages/${assistantMessageId}/stream`;
+    const url = `${baseUrl}/chats/${chatId}/messages/${messageId}/stream`;
     const eventSource = new EventSource(url);
 
     eventSource.onmessage = (e) => {
-      console.log(Date.now(), e.data);
-
       if (abort.signal.aborted) {
         eventSource.close();
         return;
@@ -74,25 +71,69 @@ export function useBackendChatService(baseUrl: string) {
       const { token } = JSON.parse(e.data) as { seq_id: number; token: string };
       setActiveMessages(prev =>
         prev.map(m =>
-          m.id === assistantMessageId
+          m.id === messageId
             ? { ...m, content: m.content ? m.content + token : token }
             : m
         )
       );
     };
 
-    eventSource.onerror = () => {
+    // The server closes the connection both on normal completion and on
+    // failure/timeout (it emits a named `event: error` frame first in the
+    // latter case), and a dropped connection looks the same to EventSource.
+    // Rather than guess which happened, always refetch messages and let the
+    // backend-persisted status decide what happens next.
+    eventSource.onerror = async () => {
       eventSource.close();
-      setActiveMessages(prev =>
-        prev.map(m =>
-          m.id === assistantMessageId && m.status === 'pending'
-            ? { ...m, status: 'complete' }
-            : m
-        )
-      );
+      if (abort.signal.aborted) return;
+
+      const messages = await fetchMessages(baseUrl, chatId);
+      if (abort.signal.aborted) return;
+
+      const target = messages.find(m => m.id === messageId);
+
+      if (target?.status === 'pending') {
+        if (attempt < MAX_RECONNECT_ATTEMPTS) {
+          setActiveMessages(messages.map(m => m.id === messageId ? { ...m, content: '' } : m));
+          setTimeout(() => {
+            if (!abort.signal.aborted) attemptStream(chatId, messageId, attempt + 1);
+          }, RECONNECT_DELAY_MS);
+        } else {
+          // Gave up reconnecting; the backend may still consider this pending.
+          // Reflect it as failed locally so the user gets a retry affordance.
+          setActiveMessages(messages.map(m => m.id === messageId ? { ...m, status: 'failed' } : m));
+        }
+      } else {
+        setActiveMessages(messages);
+      }
+
       fetchChats(baseUrl).then(setChats);
     };
   }, [baseUrl]);
+
+  const retryMessage = useCallback(async function retryMessage(chatId: string, messageId: string) {
+    const messages = await fetchMessages(baseUrl, chatId);
+    setActiveMessages(messages);
+
+    const target = messages.find(m => m.id === messageId);
+    if (!target) return;
+
+    if (target.status === 'failed') {
+      const res = await fetch(`${baseUrl}/chats/${chatId}/messages/${messageId}/retry`, {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        // Backend no longer considers it failed (e.g. already retried elsewhere) - reconcile.
+        fetchMessages(baseUrl, chatId).then(setActiveMessages);
+        return;
+      }
+      const updated = mapMessage(await res.json());
+      setActiveMessages(prev => prev.map(m => m.id === messageId ? updated : m));
+      attemptStream(chatId, messageId, 0);
+    } else if (target.status === 'pending') {
+      attemptStream(chatId, messageId, 0);
+    }
+  }, [baseUrl, attemptStream]);
 
   useEffect(() => {
     fetchChats(baseUrl).then(setChats);
@@ -102,16 +143,22 @@ export function useBackendChatService(baseUrl: string) {
     if (activeChatId === null) {
       return;
     }
+    let cancelled = false;
     fetchMessages(baseUrl, activeChatId).then(messages => {
-      const pendingAssistant = messages.find(m => m.role === 'assistant' && m.status === 'pending');
-      if (pendingAssistant) {
-        setActiveMessages(messages.map(m => m.id === pendingAssistant.id ? { ...m, content: '' } : m));
-        streamAssistantMessage(activeChatId, pendingAssistant.id);
+      if (cancelled) return;
+      const last = messages[messages.length - 1];
+      if (last?.role === 'assistant' && last.status === 'pending') {
+        setActiveMessages(messages.map(m => m.id === last.id ? { ...m, content: '' } : m));
+        attemptStream(activeChatId, last.id, 0);
       } else {
         setActiveMessages(messages);
       }
     });
-  }, [activeChatId, baseUrl, streamAssistantMessage]);
+    return () => {
+      cancelled = true;
+      streamAbortRef.current?.abort();
+    };
+  }, [activeChatId, baseUrl, attemptStream]);
 
   function startNewChat() {
     setActiveChatId(null);
@@ -140,7 +187,7 @@ export function useBackendChatService(baseUrl: string) {
 
       const assistantMessage = messages.find(m => m.role === 'assistant' && m.status === 'pending');
       if (assistantMessage) {
-        streamAssistantMessage(chat.id, assistantMessage.id);
+        attemptStream(chat.id, assistantMessage.id, 0);
       }
     } else {
       const chatId = activeChatId;
@@ -161,7 +208,7 @@ export function useBackendChatService(baseUrl: string) {
       const assistantMessage = mapMessage(await res.json());
 
       setActiveMessages(prev => [...prev, userMessage, assistantMessage]);
-      streamAssistantMessage(chatId, assistantMessage.id);
+      attemptStream(chatId, assistantMessage.id, 0);
     }
   }
 
@@ -172,5 +219,6 @@ export function useBackendChatService(baseUrl: string) {
     startNewChat,
     selectChat,
     sendMessage,
+    retryMessage,
   };
 }

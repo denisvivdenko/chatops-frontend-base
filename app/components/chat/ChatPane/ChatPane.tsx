@@ -8,19 +8,20 @@ import styles from './ChatPane.module.css';
 type Props = {
   messages: Message[];
   onSendMessageAction(content: string): void;
+  onRetryMessageAction?(messageId: string): void;
 };
 
-export default function ChatPane({ messages, onSendMessageAction }: Props) {
+export default function ChatPane({ messages, onSendMessageAction, onRetryMessageAction }: Props) {
   const lastMessage = messages[messages.length - 1];
-  const isPending = lastMessage?.status === 'pending';
+  const lastMessageUnresolved = lastMessage?.status === 'pending' || lastMessage?.status === 'failed';
 
   return (
     <div className={styles.pane}>
       <div className={styles.messageArea}>
-        <MessageList messages={messages} />
+        <MessageList messages={messages} onRetryMessageAction={onRetryMessageAction} />
       </div>
       <div className={styles.inputBar}>
-        <MessageInput onSendAction={onSendMessageAction} disableSend={isPending} />
+        <MessageInput onSendAction={onSendMessageAction} disableSend={lastMessageUnresolved} />
       </div>
     </div>
   );
