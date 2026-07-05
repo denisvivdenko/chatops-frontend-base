@@ -8,7 +8,7 @@ import ChatPane from '../../chat/ChatPane/ChatPane';
 import styles from './AppLayout.module.css';
 
 export default function AppLayout({ backendUrl }: { backendUrl: string }) {
-  const { chats, activeChatId, activeMessages, startNewChat, selectChat, sendMessage, retryMessage } =
+  const { chats, activeChatId, activeMessages, sendMessage, retryMessage } =
     useBackendChatService(backendUrl);
   const isMobile = useMediaQuery('(max-width: 768px)');
 
@@ -16,12 +16,7 @@ export default function AppLayout({ backendUrl }: { backendUrl: string }) {
 
   return (
     <div className={styles.layout}>
-      <Layout
-        chats={chats}
-        activeChatId={activeChatId}
-        onNewChatAction={startNewChat}
-        onSelectChatAction={selectChat}
-      >
+      <Layout chats={chats} activeChatId={activeChatId}>
         <ChatPane
           messages={activeMessages}
           onSendMessageAction={sendMessage}

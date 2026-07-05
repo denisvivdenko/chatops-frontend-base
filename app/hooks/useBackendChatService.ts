@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import type { Chat, Message } from '../types/chat';
 
 const MAX_RECONNECT_ATTEMPTS = 3;
@@ -49,8 +50,11 @@ async function fetchMessages(baseUrl: string, chatId: string): Promise<Message[]
 }
 
 export function useBackendChatService(baseUrl: string) {
+  const router = useRouter();
+  const { chatId } = useParams<{ chatId?: string }>();
+  const activeChatId = chatId ?? null;
+
   const [chats, setChats] = useState<Chat[]>([]);
-  const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [_activeMessages, setActiveMessages] = useState<Message[]>([]);
   const activeMessages = activeChatId === null ? [] : _activeMessages;
   const streamAbortRef = useRef<AbortController | null>(null);
@@ -160,14 +164,6 @@ export function useBackendChatService(baseUrl: string) {
     };
   }, [activeChatId, baseUrl, attemptStream]);
 
-  function startNewChat() {
-    setActiveChatId(null);
-  }
-
-  function selectChat(id: string) {
-    setActiveChatId(id);
-  }
-
   async function sendMessage(content: string) {
     const isNewChat = activeChatId === null;
 
@@ -180,15 +176,7 @@ export function useBackendChatService(baseUrl: string) {
       const chat = mapChat(await res.json());
 
       setChats(prev => [chat, ...prev]);
-      setActiveChatId(chat.id);
-
-      const messages = await fetchMessages(baseUrl, chat.id);
-      setActiveMessages(messages);
-
-      const assistantMessage = messages.find(m => m.role === 'assistant' && m.status === 'pending');
-      if (assistantMessage) {
-        attemptStream(chat.id, assistantMessage.id, 0);
-      }
+      router.push(`/chat/${chat.id}`);
     } else {
       const chatId = activeChatId;
 
@@ -216,8 +204,6 @@ export function useBackendChatService(baseUrl: string) {
     chats,
     activeChatId,
     activeMessages,
-    startNewChat,
-    selectChat,
     sendMessage,
     retryMessage,
   };

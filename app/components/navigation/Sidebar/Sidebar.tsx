@@ -9,16 +9,9 @@ import styles from './Sidebar.module.css';
 type SidebarProps = {
   chats: Chat[];
   activeChatId: string | null;
-  onNewChatAction(): void;
-  onSelectChatAction(id: string): void;
 };
 
-export default function Sidebar({
-  chats,
-  activeChatId,
-  onNewChatAction,
-  onSelectChatAction,
-}: SidebarProps) {
+export default function Sidebar({ chats, activeChatId }: SidebarProps) {
   const [expanded, setExpanded] = useState(true);
 
   return (
@@ -34,12 +27,7 @@ export default function Sidebar({
 
       {expanded && (
         <div className={styles.chatListWrapper}>
-          <ChatList
-            chats={chats}
-            activeChatId={activeChatId}
-            onNewChatAction={onNewChatAction}
-            onSelectChatAction={onSelectChatAction}
-          />
+          <ChatList chats={chats} activeChatId={activeChatId} />
         </div>
       )}
     </aside>

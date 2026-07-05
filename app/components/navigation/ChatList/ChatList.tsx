@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import type { Chat } from '../../../types/chat';
 import styles from './ChatList.module.css';
@@ -5,34 +6,30 @@ import styles from './ChatList.module.css';
 type ChatListProps = {
   chats: Chat[];
   activeChatId: string | null;
-  onNewChatAction(): void;
-  onSelectChatAction(id: string): void;
+  onNavigateAction?(): void;
 };
 
-export default function ChatList({
-  chats,
-  activeChatId,
-  onNewChatAction,
-  onSelectChatAction,
-}: ChatListProps) {
+export default function ChatList({ chats, activeChatId, onNavigateAction }: ChatListProps) {
   return (
     <div className={styles.list}>
-      <button
+      <Link
+        href="/"
         className={`${styles.item} ${activeChatId === null ? styles.itemActive : ''}`}
-        onClick={onNewChatAction}
+        onClick={onNavigateAction}
       >
         <Plus className={styles.icon} size={20} strokeWidth={1} />
         <span className={styles.itemText}>New chat</span>
-      </button>
+      </Link>
       {chats.map(chat => (
-        <button
+        <Link
           key={chat.id}
+          href={`/chat/${chat.id}`}
           className={`${styles.item} ${chat.id === activeChatId ? styles.itemActive : ''}`}
-          onClick={() => onSelectChatAction(chat.id)}
+          onClick={onNavigateAction}
           title={chat.title}
         >
           <span className={styles.itemText}>{chat.title}</span>
-        </button>
+        </Link>
       ))}
     </div>
   );
