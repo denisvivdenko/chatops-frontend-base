@@ -8,6 +8,17 @@ import { ensureSession, authorizedFetch, resetSession } from './authSession';
 const MAX_RECONNECT_ATTEMPTS = 3;
 const RECONNECT_DELAY_MS = 500;
 
+class HttpError extends Error {
+  constructor(public status: number) {
+    super(`Request failed with status ${status}`);
+  }
+}
+
+async function parseJson<T>(res: Response): Promise<T> {
+  if (!res.ok) throw new HttpError(res.status);
+  return res.json();
+}
+
 function mapMessage(raw: {
   id: string;
   role: 'user' | 'assistant';
@@ -40,13 +51,13 @@ function mapChat(raw: {
 
 async function fetchChats(baseUrl: string): Promise<Chat[]> {
   const res = await authorizedFetch(baseUrl, '/chats?limit=50');
-  const data = await res.json();
+  const data = await parseJson<Parameters<typeof mapChat>[0][]>(res);
   return data.map(mapChat);
 }
 
 async function fetchMessages(baseUrl: string, chatId: string): Promise<Message[]> {
   const res = await authorizedFetch(baseUrl, `/chats/${chatId}/messages`);
-  const data = await res.json();
+  const data = await parseJson<Parameters<typeof mapMessage>[0][]>(res);
   return data.map(mapMessage);
 }
 
@@ -204,6 +215,14 @@ export function useBackendChatService(baseUrl: string) {
         attemptStream(activeChatId, last.id, 0);
       } else {
         setActiveMessages(messages);
+      }
+    }).catch(err => {
+      if (cancelled) return;
+      if (err instanceof HttpError && err.status === 403) {
+        // Chat id doesn't belong to the current identity (e.g. cached from a
+        // previous anonymous session) - fall back to the chat list.
+        fetchChats(baseUrl).then(setChats);
+        router.push('/');
       }
     });
     return () => {
