@@ -5,11 +5,21 @@ import { useMediaQuery } from '../../../hooks/useMediaQuery';
 import DesktopLayout from '../DesktopLayout/DesktopLayout';
 import MobileLayout from '../MobileLayout/MobileLayout';
 import ChatPane from '../../chat/ChatPane/ChatPane';
+import NotFoundNotice from '../../feedback/NotFoundNotice/NotFoundNotice';
 import styles from './AppLayout.module.css';
 
 export default function AppLayout({ backendUrl }: { backendUrl: string }) {
-  const { chats, activeChatId, activeMessages, sendMessage, retryMessage, logout } =
-    useBackendChatService(backendUrl);
+  const {
+    chats,
+    activeChatId,
+    activeMessages,
+    sendMessage,
+    retryMessage,
+    logout,
+    notFoundReason,
+    goHome,
+    dismissResourceNotFound,
+  } = useBackendChatService(backendUrl);
   const isMobile = useMediaQuery('(max-width: 768px)');
 
   const Layout = isMobile ? MobileLayout : DesktopLayout;
@@ -25,6 +35,13 @@ export default function AppLayout({ backendUrl }: { backendUrl: string }) {
           }
         />
       </Layout>
+      {notFoundReason && (
+        <NotFoundNotice
+          reason={notFoundReason}
+          onGoHomeAction={goHome}
+          onStayAction={dismissResourceNotFound}
+        />
+      )}
     </div>
   );
 }

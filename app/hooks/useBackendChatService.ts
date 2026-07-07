@@ -100,7 +100,30 @@ export function useBackendChatService(baseUrl: string) {
   const [chats, setChats] = useState<Chat[]>([]);
   const [_activeMessages, setActiveMessages] = useState<Message[]>([]);
   const activeMessages = activeChatId === null ? [] : _activeMessages;
+  const [notFoundReason, setNotFoundReason] = useState<'not-found' | 'forbidden' | null>(null);
   const streamAbortRef = useRef<AbortController | null>(null);
+
+  const handleFetchError = useCallback((err: unknown): boolean => {
+    if (err instanceof HttpError && err.status === 404) {
+      setNotFoundReason('not-found');
+      return true;
+    }
+    if (err instanceof HttpError && err.status === 403) {
+      setNotFoundReason('forbidden');
+      return true;
+    }
+    return false;
+  }, []);
+
+  const goHome = useCallback(() => {
+    setNotFoundReason(null);
+    fetchChats(baseUrl).then(setChats);
+    router.push('/');
+  }, [baseUrl, router]);
+
+  const dismissResourceNotFound = useCallback(() => {
+    setNotFoundReason(null);
+  }, []);
 
   const attemptStream = useCallback(function attemptStream(chatId: string, messageId: string, attempt: number) {
     streamAbortRef.current?.abort();
@@ -108,7 +131,14 @@ export function useBackendChatService(baseUrl: string) {
     streamAbortRef.current = abort;
 
     async function reconcile() {
-      const messages = await fetchMessages(baseUrl, chatId);
+      let messages: Message[];
+      try {
+        messages = await fetchMessages(baseUrl, chatId);
+      } catch (err) {
+        if (abort.signal.aborted) return;
+        handleFetchError(err);
+        return;
+      }
       if (abort.signal.aborted) return;
 
       const target = messages.find(m => m.id === messageId);
@@ -163,10 +193,16 @@ export function useBackendChatService(baseUrl: string) {
     }
 
     run();
-  }, [baseUrl]);
+  }, [baseUrl, handleFetchError]);
 
   const retryMessage = useCallback(async function retryMessage(chatId: string, messageId: string) {
-    const messages = await fetchMessages(baseUrl, chatId);
+    let messages: Message[];
+    try {
+      messages = await fetchMessages(baseUrl, chatId);
+    } catch (err) {
+      handleFetchError(err);
+      return;
+    }
     setActiveMessages(messages);
 
     const target = messages.find(m => m.id === messageId);
@@ -177,8 +213,9 @@ export function useBackendChatService(baseUrl: string) {
         method: 'POST',
       });
       if (!res.ok) {
+        if (handleFetchError(new HttpError(res.status))) return;
         // Backend no longer considers it failed (e.g. already retried elsewhere) - reconcile.
-        fetchMessages(baseUrl, chatId).then(setActiveMessages);
+        fetchMessages(baseUrl, chatId).then(setActiveMessages).catch(handleFetchError);
         return;
       }
       const updated = mapMessage(await res.json());
@@ -187,7 +224,7 @@ export function useBackendChatService(baseUrl: string) {
     } else if (target.status === 'pending') {
       attemptStream(chatId, messageId, 0);
     }
-  }, [baseUrl, attemptStream]);
+  }, [baseUrl, attemptStream, handleFetchError]);
 
   useEffect(() => {
     let cancelled = false;
@@ -207,6 +244,7 @@ export function useBackendChatService(baseUrl: string) {
       return;
     }
     let cancelled = false;
+    setNotFoundReason(null);
     fetchMessages(baseUrl, activeChatId).then(messages => {
       if (cancelled) return;
       const last = messages[messages.length - 1];
@@ -218,32 +256,31 @@ export function useBackendChatService(baseUrl: string) {
       }
     }).catch(err => {
       if (cancelled) return;
-      if (err instanceof HttpError && err.status === 403) {
-        // Chat id doesn't belong to the current identity (e.g. cached from a
-        // previous anonymous session) - fall back to the chat list.
-        fetchChats(baseUrl).then(setChats);
-        router.push('/');
-      }
+      handleFetchError(err);
     });
     return () => {
       cancelled = true;
       streamAbortRef.current?.abort();
     };
-  }, [sessionReady, activeChatId, baseUrl, attemptStream]);
+  }, [sessionReady, activeChatId, baseUrl, attemptStream, handleFetchError]);
 
   async function sendMessage(content: string) {
     const isNewChat = activeChatId === null;
 
     if (isNewChat) {
-      const res = await authorizedFetch(baseUrl, '/chats', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: content }),
-      });
-      const chat = mapChat(await res.json());
+      try {
+        const res = await authorizedFetch(baseUrl, '/chats', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: content }),
+        });
+        const chat = mapChat(await parseJson<Parameters<typeof mapChat>[0]>(res));
 
-      setChats(prev => [chat, ...prev]);
-      router.push(`/chat/${chat.id}`);
+        setChats(prev => [chat, ...prev]);
+        router.push(`/chat/${chat.id}`);
+      } catch (err) {
+        handleFetchError(err);
+      }
     } else {
       const chatId = activeChatId;
 
@@ -255,15 +292,19 @@ export function useBackendChatService(baseUrl: string) {
         createdAt: Date.now(),
       };
 
-      const res = await authorizedFetch(baseUrl, `/chats/${chatId}/messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content }),
-      });
-      const assistantMessage = mapMessage(await res.json());
+      try {
+        const res = await authorizedFetch(baseUrl, `/chats/${chatId}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content }),
+        });
+        const assistantMessage = mapMessage(await parseJson<Parameters<typeof mapMessage>[0]>(res));
 
-      setActiveMessages(prev => [...prev, userMessage, assistantMessage]);
-      attemptStream(chatId, assistantMessage.id, 0);
+        setActiveMessages(prev => [...prev, userMessage, assistantMessage]);
+        attemptStream(chatId, assistantMessage.id, 0);
+      } catch (err) {
+        handleFetchError(err);
+      }
     }
   }
 
@@ -282,5 +323,8 @@ export function useBackendChatService(baseUrl: string) {
     sendMessage,
     retryMessage,
     logout,
+    notFoundReason,
+    goHome,
+    dismissResourceNotFound,
   };
 }
