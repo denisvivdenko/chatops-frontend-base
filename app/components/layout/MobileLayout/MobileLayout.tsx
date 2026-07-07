@@ -9,12 +9,13 @@ import styles from './MobileLayout.module.css';
 type Props = {
   chats: Chat[];
   activeChatId: string | null;
+  onLogoutAction(): void;
   children: React.ReactNode;
 };
 
 type MenuState = 'closed' | 'open' | 'closing';
 
-export default function MobileLayout({ chats, activeChatId, children }: Props) {
+export default function MobileLayout({ chats, activeChatId, onLogoutAction, children }: Props) {
   const [menuState, setMenuState] = useState<MenuState>('closed');
 
   function handleClose() {
@@ -36,6 +37,7 @@ export default function MobileLayout({ chats, activeChatId, children }: Props) {
           chats={chats}
           activeChatId={activeChatId}
           onCloseAction={handleClose}
+          onLogoutAction={onLogoutAction}
           isClosing={menuState === 'closing'}
           onAnimationEndAction={handleAnimationEnd}
         />

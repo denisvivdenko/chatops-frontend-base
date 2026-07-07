@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { PanelLeft } from 'lucide-react';
+import { PanelLeft, LogOut } from 'lucide-react';
 import ChatList from '../ChatList/ChatList';
 import type { Chat } from '../../../types/chat';
 import styles from './Sidebar.module.css';
@@ -9,9 +9,10 @@ import styles from './Sidebar.module.css';
 type SidebarProps = {
   chats: Chat[];
   activeChatId: string | null;
+  onLogoutAction(): void;
 };
 
-export default function Sidebar({ chats, activeChatId }: SidebarProps) {
+export default function Sidebar({ chats, activeChatId, onLogoutAction }: SidebarProps) {
   const [expanded, setExpanded] = useState(true);
 
   return (
@@ -30,6 +31,15 @@ export default function Sidebar({ chats, activeChatId }: SidebarProps) {
           <ChatList chats={chats} activeChatId={activeChatId} />
         </div>
       )}
+
+      <button
+        className={styles.item}
+        aria-label="Log out"
+        onClick={onLogoutAction}
+      >
+        <LogOut className={styles.icon} size={20} strokeWidth={1} />
+        <span className={styles.label}>Log out</span>
+      </button>
     </aside>
   );
 }

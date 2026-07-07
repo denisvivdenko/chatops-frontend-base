@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import type { Chat, Message } from '../types/chat';
+import { ensureSession, authorizedFetch, resetSession } from './authSession';
 
 const MAX_RECONNECT_ATTEMPTS = 3;
 const RECONNECT_DELAY_MS = 500;
@@ -38,15 +39,45 @@ function mapChat(raw: {
 }
 
 async function fetchChats(baseUrl: string): Promise<Chat[]> {
-  const res = await fetch(`${baseUrl}/chats?limit=50`);
+  const res = await authorizedFetch(baseUrl, '/chats?limit=50');
   const data = await res.json();
   return data.map(mapChat);
 }
 
 async function fetchMessages(baseUrl: string, chatId: string): Promise<Message[]> {
-  const res = await fetch(`${baseUrl}/chats/${chatId}/messages`);
+  const res = await authorizedFetch(baseUrl, `/chats/${chatId}/messages`);
   const data = await res.json();
   return data.map(mapMessage);
+}
+
+/** Reads an SSE body (fetch doesn't give us EventSource's framing for free) and emits each token. */
+async function readTokenStream(response: Response, onToken: (token: string) => void): Promise<void> {
+  if (!response.body) return;
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) return;
+    buffer += decoder.decode(value, { stream: true });
+
+    let boundary: number;
+    while ((boundary = buffer.indexOf('\n\n')) !== -1) {
+      const rawEvent = buffer.slice(0, boundary);
+      buffer = buffer.slice(boundary + 2);
+
+      const data = rawEvent
+        .split('\n')
+        .filter(line => line.startsWith('data:'))
+        .map(line => line.slice(5).trim())
+        .join('\n');
+      if (!data) continue;
+
+      const { token } = JSON.parse(data) as { seq_id: number; token: string };
+      onToken(token);
+    }
+  }
 }
 
 export function useBackendChatService(baseUrl: string) {
@@ -54,6 +85,7 @@ export function useBackendChatService(baseUrl: string) {
   const { chatId } = useParams<{ chatId?: string }>();
   const activeChatId = chatId ?? null;
 
+  const [sessionReady, setSessionReady] = useState(false);
   const [chats, setChats] = useState<Chat[]>([]);
   const [_activeMessages, setActiveMessages] = useState<Message[]>([]);
   const activeMessages = activeChatId === null ? [] : _activeMessages;
@@ -64,33 +96,7 @@ export function useBackendChatService(baseUrl: string) {
     const abort = new AbortController();
     streamAbortRef.current = abort;
 
-    const url = `${baseUrl}/chats/${chatId}/messages/${messageId}/stream`;
-    const eventSource = new EventSource(url);
-
-    eventSource.onmessage = (e) => {
-      if (abort.signal.aborted) {
-        eventSource.close();
-        return;
-      }
-      const { token } = JSON.parse(e.data) as { seq_id: number; token: string };
-      setActiveMessages(prev =>
-        prev.map(m =>
-          m.id === messageId
-            ? { ...m, content: m.content ? m.content + token : token }
-            : m
-        )
-      );
-    };
-
-    // The server closes the connection both on normal completion and on
-    // failure/timeout (it emits a named `event: error` frame first in the
-    // latter case), and a dropped connection looks the same to EventSource.
-    // Rather than guess which happened, always refetch messages and let the
-    // backend-persisted status decide what happens next.
-    eventSource.onerror = async () => {
-      eventSource.close();
-      if (abort.signal.aborted) return;
-
+    async function reconcile() {
       const messages = await fetchMessages(baseUrl, chatId);
       if (abort.signal.aborted) return;
 
@@ -112,7 +118,40 @@ export function useBackendChatService(baseUrl: string) {
       }
 
       fetchChats(baseUrl).then(setChats);
-    };
+    }
+
+    // The server closes the connection both on normal completion and on
+    // failure/timeout, and a dropped connection looks the same either way.
+    // Rather than guess which happened, always refetch messages and let the
+    // backend-persisted status decide what happens next.
+    async function run() {
+      try {
+        const response = await authorizedFetch(
+          baseUrl,
+          `/chats/${chatId}/messages/${messageId}/stream`,
+          { signal: abort.signal, headers: { Accept: 'text/event-stream' } },
+        );
+        if (abort.signal.aborted) return;
+
+        await readTokenStream(response, (token) => {
+          if (abort.signal.aborted) return;
+          setActiveMessages(prev =>
+            prev.map(m =>
+              m.id === messageId
+                ? { ...m, content: m.content ? m.content + token : token }
+                : m
+            )
+          );
+        });
+      } catch {
+        if (abort.signal.aborted) return;
+      }
+
+      if (abort.signal.aborted) return;
+      await reconcile();
+    }
+
+    run();
   }, [baseUrl]);
 
   const retryMessage = useCallback(async function retryMessage(chatId: string, messageId: string) {
@@ -123,7 +162,7 @@ export function useBackendChatService(baseUrl: string) {
     if (!target) return;
 
     if (target.status === 'failed') {
-      const res = await fetch(`${baseUrl}/chats/${chatId}/messages/${messageId}/retry`, {
+      const res = await authorizedFetch(baseUrl, `/chats/${chatId}/messages/${messageId}/retry`, {
         method: 'POST',
       });
       if (!res.ok) {
@@ -140,11 +179,20 @@ export function useBackendChatService(baseUrl: string) {
   }, [baseUrl, attemptStream]);
 
   useEffect(() => {
-    fetchChats(baseUrl).then(setChats);
+    let cancelled = false;
+    ensureSession(baseUrl).then(() => {
+      if (!cancelled) setSessionReady(true);
+    });
+    return () => { cancelled = true; };
   }, [baseUrl]);
 
   useEffect(() => {
-    if (activeChatId === null) {
+    if (!sessionReady) return;
+    fetchChats(baseUrl).then(setChats);
+  }, [sessionReady, baseUrl]);
+
+  useEffect(() => {
+    if (!sessionReady || activeChatId === null) {
       return;
     }
     let cancelled = false;
@@ -162,13 +210,13 @@ export function useBackendChatService(baseUrl: string) {
       cancelled = true;
       streamAbortRef.current?.abort();
     };
-  }, [activeChatId, baseUrl, attemptStream]);
+  }, [sessionReady, activeChatId, baseUrl, attemptStream]);
 
   async function sendMessage(content: string) {
     const isNewChat = activeChatId === null;
 
     if (isNewChat) {
-      const res = await fetch(`${baseUrl}/chats`, {
+      const res = await authorizedFetch(baseUrl, '/chats', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: content }),
@@ -188,7 +236,7 @@ export function useBackendChatService(baseUrl: string) {
         createdAt: Date.now(),
       };
 
-      const res = await fetch(`${baseUrl}/chats/${chatId}/messages`, {
+      const res = await authorizedFetch(baseUrl, `/chats/${chatId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content }),
@@ -200,11 +248,20 @@ export function useBackendChatService(baseUrl: string) {
     }
   }
 
+  const logout = useCallback(async function logout() {
+    streamAbortRef.current?.abort();
+    await resetSession(baseUrl);
+    setActiveMessages([]);
+    setChats(await fetchChats(baseUrl));
+    router.push('/');
+  }, [baseUrl, router]);
+
   return {
     chats,
     activeChatId,
     activeMessages,
     sendMessage,
     retryMessage,
+    logout,
   };
 }
