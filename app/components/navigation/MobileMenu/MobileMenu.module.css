@@ -48,6 +48,16 @@
   background: var(--color-bg-subtle);
 }
 
+.closeBtnDanger {
+  background: var(--color-danger);
+  color: var(--color-bg);
+}
+
+.closeBtnDanger:hover {
+  background: var(--color-danger);
+  opacity: 0.9;
+}
+
 .chatListWrapper {
   display: flex;
   flex-direction: column;

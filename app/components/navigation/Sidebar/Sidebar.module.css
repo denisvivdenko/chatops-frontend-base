@@ -34,6 +34,16 @@
   background: var(--color-bg-subtle);
 }
 
+.itemDanger {
+  background: var(--color-danger);
+  color: var(--color-bg);
+}
+
+.itemDanger:hover {
+  background: var(--color-danger);
+  opacity: 0.9;
+}
+
 .icon {
   flex-shrink: 0;
 }

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { PanelLeft, LogOut } from 'lucide-react';
 import ChatList from '../ChatList/ChatList';
 import type { Chat } from '../../../types/chat';
+import { useConfirmAction } from '../../../hooks/useConfirmAction';
 import styles from './Sidebar.module.css';
 
 type SidebarProps = {
@@ -15,6 +16,8 @@ type SidebarProps = {
 
 export default function Sidebar({ chats, activeChatId, onLogoutAction, onDeleteChatAction }: SidebarProps) {
   const [expanded, setExpanded] = useState(true);
+  const logoutRef = useRef<HTMLButtonElement>(null);
+  const logout = useConfirmAction(logoutRef, onLogoutAction);
 
   return (
     <aside className={`${styles.sidebar} ${expanded ? styles.expanded : ''}`}>
@@ -34,12 +37,13 @@ export default function Sidebar({ chats, activeChatId, onLogoutAction, onDeleteC
       )}
 
       <button
-        className={styles.item}
-        aria-label="Log out"
-        onClick={onLogoutAction}
+        ref={logoutRef}
+        className={`${styles.item} ${logout.confirming ? styles.itemDanger : ''}`}
+        aria-label={logout.confirming ? 'Confirm log out' : 'Log out'}
+        onClick={logout.handleClick}
       >
         <LogOut className={styles.icon} size={20} strokeWidth={1} />
-        <span className={styles.label}>Log out</span>
+        <span className={styles.label}>{logout.confirming ? 'Confirm logout' : 'Log out'}</span>
       </button>
     </aside>
   );

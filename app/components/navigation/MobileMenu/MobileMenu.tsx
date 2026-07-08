@@ -1,8 +1,10 @@
 'use client';
 
+import { useRef } from 'react';
 import { X, LogOut } from 'lucide-react';
 import ChatList from '../ChatList/ChatList';
 import type { Chat } from '../../../types/chat';
+import { useConfirmAction } from '../../../hooks/useConfirmAction';
 import styles from './MobileMenu.module.css';
 
 type Props = {
@@ -24,6 +26,9 @@ export default function MobileMenu({
   isClosing,
   onAnimationEndAction,
 }: Props) {
+  const logoutRef = useRef<HTMLButtonElement>(null);
+  const logout = useConfirmAction(logoutRef, onLogoutAction);
+
   function handleAnimationEnd(e: React.AnimationEvent<HTMLDivElement>) {
     if (e.target === e.currentTarget) onAnimationEndAction?.();
   }
@@ -34,7 +39,12 @@ export default function MobileMenu({
       onAnimationEnd={handleAnimationEnd}
     >
       <div className={styles.header}>
-        <button className={styles.closeBtn} aria-label="Log out" onClick={onLogoutAction}>
+        <button
+          ref={logoutRef}
+          className={`${styles.closeBtn} ${logout.confirming ? styles.closeBtnDanger : ''}`}
+          aria-label={logout.confirming ? 'Confirm log out' : 'Log out'}
+          onClick={logout.handleClick}
+        >
           <LogOut size={20} />
         </button>
         <button className={styles.closeBtn} aria-label="Close menu" onClick={onCloseAction}>
