@@ -15,6 +15,7 @@ export default function AppLayout({ backendUrl }: { backendUrl: string }) {
     activeMessages,
     sendMessage,
     retryMessage,
+    deleteChat,
     logout,
     notFoundReason,
     goHome,
@@ -26,7 +27,12 @@ export default function AppLayout({ backendUrl }: { backendUrl: string }) {
 
   return (
     <div className={styles.layout}>
-      <Layout chats={chats} activeChatId={activeChatId} onLogoutAction={logout}>
+      <Layout
+        chats={chats}
+        activeChatId={activeChatId}
+        onLogoutAction={logout}
+        onDeleteChatAction={deleteChat}
+      >
         <ChatPane
           messages={activeMessages}
           onSendMessageAction={sendMessage}

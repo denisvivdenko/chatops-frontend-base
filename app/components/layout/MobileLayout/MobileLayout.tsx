@@ -10,12 +10,13 @@ type Props = {
   chats: Chat[];
   activeChatId: string | null;
   onLogoutAction(): void;
+  onDeleteChatAction(chatId: string): void;
   children: React.ReactNode;
 };
 
 type MenuState = 'closed' | 'open' | 'closing';
 
-export default function MobileLayout({ chats, activeChatId, onLogoutAction, children }: Props) {
+export default function MobileLayout({ chats, activeChatId, onLogoutAction, onDeleteChatAction, children }: Props) {
   const [menuState, setMenuState] = useState<MenuState>('closed');
 
   function handleClose() {
@@ -38,6 +39,7 @@ export default function MobileLayout({ chats, activeChatId, onLogoutAction, chil
           activeChatId={activeChatId}
           onCloseAction={handleClose}
           onLogoutAction={onLogoutAction}
+          onDeleteChatAction={onDeleteChatAction}
           isClosing={menuState === 'closing'}
           onAnimationEndAction={handleAnimationEnd}
         />

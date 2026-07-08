@@ -308,6 +308,18 @@ export function useBackendChatService(baseUrl: string) {
     }
   }
 
+  const deleteChat = useCallback(async function deleteChat(chatId: string) {
+    const res = await authorizedFetch(baseUrl, `/chats/${chatId}`, { method: 'DELETE' });
+    if (!res.ok) {
+      handleFetchError(new HttpError(res.status));
+      return;
+    }
+    setChats(prev => prev.filter(c => c.id !== chatId));
+    if (chatId === activeChatId) {
+      router.push('/');
+    }
+  }, [baseUrl, activeChatId, router, handleFetchError]);
+
   const logout = useCallback(async function logout() {
     streamAbortRef.current?.abort();
     await resetSession(baseUrl);
@@ -322,6 +334,7 @@ export function useBackendChatService(baseUrl: string) {
     activeMessages,
     sendMessage,
     retryMessage,
+    deleteChat,
     logout,
     notFoundReason,
     goHome,

@@ -47,3 +47,30 @@
   min-width: 0;
   flex: 1;
 }
+
+.itemRow {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.itemRow:hover {
+  background: var(--color-bg-subtle);
+}
+
+.itemRowActive {
+  background: var(--color-bg-subtle);
+}
+
+.itemRow .item {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  background: none;
+}
+
+.itemRow .item:hover {
+  background: none;
+}

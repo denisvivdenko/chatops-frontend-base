@@ -11,7 +11,7 @@ type Props = {
 
 const MESSAGES = {
   'not-found': "This chat couldn't be found.",
-  forbidden: "This chat belongs to someone else, so you can't view it.",
+  forbidden: "This chat belongs to someone else, so you can't access it.",
 };
 
 export default function NotFoundNotice({ reason, onGoHomeAction, onStayAction }: Props) {

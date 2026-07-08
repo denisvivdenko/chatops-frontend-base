@@ -10,6 +10,7 @@ type Props = {
   activeChatId: string | null;
   onCloseAction(): void;
   onLogoutAction(): void;
+  onDeleteChatAction(chatId: string): void;
   isClosing?: boolean;
   onAnimationEndAction?(): void;
 };
@@ -19,6 +20,7 @@ export default function MobileMenu({
   activeChatId,
   onCloseAction,
   onLogoutAction,
+  onDeleteChatAction,
   isClosing,
   onAnimationEndAction,
 }: Props) {
@@ -40,7 +42,12 @@ export default function MobileMenu({
         </button>
       </div>
       <div className={styles.chatListWrapper}>
-        <ChatList chats={chats} activeChatId={activeChatId} onNavigateAction={onCloseAction} />
+        <ChatList
+          chats={chats}
+          activeChatId={activeChatId}
+          onNavigateAction={onCloseAction}
+          onDeleteChatAction={onDeleteChatAction}
+        />
       </div>
     </div>
   );

@@ -10,9 +10,10 @@ type SidebarProps = {
   chats: Chat[];
   activeChatId: string | null;
   onLogoutAction(): void;
+  onDeleteChatAction(chatId: string): void;
 };
 
-export default function Sidebar({ chats, activeChatId, onLogoutAction }: SidebarProps) {
+export default function Sidebar({ chats, activeChatId, onLogoutAction, onDeleteChatAction }: SidebarProps) {
   const [expanded, setExpanded] = useState(true);
 
   return (
@@ -28,7 +29,7 @@ export default function Sidebar({ chats, activeChatId, onLogoutAction }: Sidebar
 
       {expanded && (
         <div className={styles.chatListWrapper}>
-          <ChatList chats={chats} activeChatId={activeChatId} />
+          <ChatList chats={chats} activeChatId={activeChatId} onDeleteChatAction={onDeleteChatAction} />
         </div>
       )}
 

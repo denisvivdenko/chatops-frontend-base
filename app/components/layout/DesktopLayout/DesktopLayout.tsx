@@ -6,13 +6,19 @@ type Props = {
   chats: Chat[];
   activeChatId: string | null;
   onLogoutAction(): void;
+  onDeleteChatAction(chatId: string): void;
   children: React.ReactNode;
 };
 
-export default function DesktopLayout({ chats, activeChatId, onLogoutAction, children }: Props) {
+export default function DesktopLayout({ chats, activeChatId, onLogoutAction, onDeleteChatAction, children }: Props) {
   return (
     <div className={styles.layout}>
-      <Sidebar chats={chats} activeChatId={activeChatId} onLogoutAction={onLogoutAction} />
+      <Sidebar
+        chats={chats}
+        activeChatId={activeChatId}
+        onLogoutAction={onLogoutAction}
+        onDeleteChatAction={onDeleteChatAction}
+      />
       <div className={styles.main}>
         {children}
       </div>
