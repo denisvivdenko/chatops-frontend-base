@@ -13,6 +13,8 @@ export default function AppLayout({ backendUrl }: { backendUrl: string }) {
     chats,
     activeChatId,
     activeMessages,
+    isLoadingChats,
+    isLoadingMessages,
     sendMessage,
     retryMessage,
     modifyMessage,
@@ -31,11 +33,13 @@ export default function AppLayout({ backendUrl }: { backendUrl: string }) {
       <Layout
         chats={chats}
         activeChatId={activeChatId}
+        isLoadingChats={isLoadingChats}
         onLogoutAction={logout}
         onDeleteChatAction={deleteChat}
       >
         <ChatPane
           messages={activeMessages}
+          isLoadingMessages={isLoadingMessages}
           onSendMessageAction={sendMessage}
           onRetryMessageAction={
             activeChatId ? (messageId: string) => retryMessage(activeChatId, messageId) : undefined

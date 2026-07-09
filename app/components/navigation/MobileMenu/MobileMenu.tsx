@@ -10,6 +10,7 @@ import styles from './MobileMenu.module.css';
 type Props = {
   chats: Chat[];
   activeChatId: string | null;
+  isLoadingChats?: boolean;
   onCloseAction(): void;
   onLogoutAction(): void;
   onDeleteChatAction(chatId: string): void;
@@ -20,6 +21,7 @@ type Props = {
 export default function MobileMenu({
   chats,
   activeChatId,
+  isLoadingChats,
   onCloseAction,
   onLogoutAction,
   onDeleteChatAction,
@@ -55,6 +57,7 @@ export default function MobileMenu({
         <ChatList
           chats={chats}
           activeChatId={activeChatId}
+          isLoadingChats={isLoadingChats}
           onNavigateAction={onCloseAction}
           onDeleteChatAction={onDeleteChatAction}
         />

@@ -98,8 +98,13 @@ export function useBackendChatService(baseUrl: string) {
 
   const [sessionReady, setSessionReady] = useState(false);
   const [chats, setChats] = useState<Chat[]>([]);
+  const [isLoadingChats, setIsLoadingChats] = useState(true);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [_activeMessages, setActiveMessages] = useState<Message[]>([]);
-  const activeMessages = activeChatId === null ? [] : _activeMessages;
+  const [pendingNewChatMessage, setPendingNewChatMessage] = useState<Message | null>(null);
+  const activeMessages = activeChatId === null
+    ? (pendingNewChatMessage ? [pendingNewChatMessage] : [])
+    : _activeMessages;
   const [notFoundReason, setNotFoundReason] = useState<'not-found' | 'forbidden' | null>(null);
   const streamAbortRef = useRef<AbortController | null>(null);
 
@@ -236,15 +241,17 @@ export function useBackendChatService(baseUrl: string) {
 
   useEffect(() => {
     if (!sessionReady) return;
-    fetchChats(baseUrl).then(setChats);
+    fetchChats(baseUrl).then(setChats).finally(() => setIsLoadingChats(false));
   }, [sessionReady, baseUrl]);
 
   useEffect(() => {
     if (!sessionReady || activeChatId === null) {
+      setIsLoadingMessages(false);
       return;
     }
     let cancelled = false;
     setNotFoundReason(null);
+    setIsLoadingMessages(true);
     fetchMessages(baseUrl, activeChatId).then(messages => {
       if (cancelled) return;
       const last = messages[messages.length - 1];
@@ -254,9 +261,11 @@ export function useBackendChatService(baseUrl: string) {
       } else {
         setActiveMessages(messages);
       }
+      setIsLoadingMessages(false);
     }).catch(err => {
       if (cancelled) return;
       handleFetchError(err);
+      setIsLoadingMessages(false);
     });
     return () => {
       cancelled = true;
@@ -268,6 +277,14 @@ export function useBackendChatService(baseUrl: string) {
     const isNewChat = activeChatId === null;
 
     if (isNewChat) {
+      setPendingNewChatMessage({
+        id: crypto.randomUUID(),
+        role: 'user',
+        content,
+        status: 'complete',
+        createdAt: Date.now(),
+      });
+
       try {
         const res = await authorizedFetch(baseUrl, '/chats', {
           method: 'POST',
@@ -277,8 +294,10 @@ export function useBackendChatService(baseUrl: string) {
         const chat = mapChat(await parseJson<Parameters<typeof mapChat>[0]>(res));
 
         setChats(prev => [chat, ...prev]);
+        setPendingNewChatMessage(null);
         router.push(`/chat/${chat.id}`);
       } catch (err) {
+        setPendingNewChatMessage(null);
         handleFetchError(err);
       }
     } else {
@@ -291,6 +310,7 @@ export function useBackendChatService(baseUrl: string) {
         status: 'complete',
         createdAt: Date.now(),
       };
+      setActiveMessages(prev => [...prev, userMessage]);
 
       try {
         const res = await authorizedFetch(baseUrl, `/chats/${chatId}/messages`, {
@@ -300,7 +320,7 @@ export function useBackendChatService(baseUrl: string) {
         });
         const assistantMessage = mapMessage(await parseJson<Parameters<typeof mapMessage>[0]>(res));
 
-        setActiveMessages(prev => [...prev, userMessage, assistantMessage]);
+        setActiveMessages(prev => [...prev, assistantMessage]);
         attemptStream(chatId, assistantMessage.id, 0);
       } catch (err) {
         handleFetchError(err);
@@ -353,6 +373,7 @@ export function useBackendChatService(baseUrl: string) {
     streamAbortRef.current?.abort();
     await resetSession(baseUrl);
     setActiveMessages([]);
+    setPendingNewChatMessage(null);
     setChats(await fetchChats(baseUrl));
     router.push('/');
   }, [baseUrl, router]);
@@ -361,6 +382,8 @@ export function useBackendChatService(baseUrl: string) {
     chats,
     activeChatId,
     activeMessages,
+    isLoadingChats,
+    isLoadingMessages,
     sendMessage,
     retryMessage,
     modifyMessage,

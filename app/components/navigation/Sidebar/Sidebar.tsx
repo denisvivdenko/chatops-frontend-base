@@ -10,11 +10,12 @@ import styles from './Sidebar.module.css';
 type SidebarProps = {
   chats: Chat[];
   activeChatId: string | null;
+  isLoadingChats?: boolean;
   onLogoutAction(): void;
   onDeleteChatAction(chatId: string): void;
 };
 
-export default function Sidebar({ chats, activeChatId, onLogoutAction, onDeleteChatAction }: SidebarProps) {
+export default function Sidebar({ chats, activeChatId, isLoadingChats, onLogoutAction, onDeleteChatAction }: SidebarProps) {
   const [expanded, setExpanded] = useState(true);
   const logoutRef = useRef<HTMLButtonElement>(null);
   const logout = useConfirmAction(logoutRef, onLogoutAction);
@@ -32,7 +33,7 @@ export default function Sidebar({ chats, activeChatId, onLogoutAction, onDeleteC
 
       {expanded && (
         <div className={styles.chatListWrapper}>
-          <ChatList chats={chats} activeChatId={activeChatId} onDeleteChatAction={onDeleteChatAction} />
+          <ChatList chats={chats} activeChatId={activeChatId} isLoadingChats={isLoadingChats} onDeleteChatAction={onDeleteChatAction} />
         </div>
       )}
 
