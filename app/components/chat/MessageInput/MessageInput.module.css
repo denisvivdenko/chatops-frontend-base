@@ -84,3 +84,10 @@
   background: var(--color-bg-subtle);
   color: var(--color-text);
 }
+
+.pasteError {
+  margin-top: 0.375rem;
+  padding-left: 1.25rem;
+  font-size: 0.85rem;
+  color: var(--color-danger);
+}

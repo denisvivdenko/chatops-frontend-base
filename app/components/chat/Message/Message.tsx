@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import { Pencil, RotateCw } from 'lucide-react';
 import type { Message } from '../../../types/chat';
 import MessageInput from '../MessageInput/MessageInput';
@@ -11,6 +11,19 @@ type MessageProps = {
   onModifyAction?: (content: string) => void;
   editDisabled?: boolean;
 };
+
+const mdComponents = {
+  img: (props: React.ComponentPropsWithoutRef<'img'>) => (
+    // eslint-disable-next-line @next/next/no-img-element -- pasted images are arbitrary data URLs, not build-time assets
+    <img {...props} className={styles.mdImage} alt={props.alt ?? ''} />
+  ),
+};
+
+// react-markdown's default urlTransform strips `data:` URIs (only allows http(s)/mailto/xmpp/irc).
+// Pasted images rely on `data:image/...` src, so allow that prefix through and sanitize everything else as usual.
+function mdUrlTransform(url: string) {
+  return url.startsWith('data:image/') ? url : defaultUrlTransform(url);
+}
 
 export default function Message({ message, onRetryAction, onModifyAction, editDisabled }: MessageProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -47,7 +60,11 @@ export default function Message({ message, onRetryAction, onModifyAction, editDi
               <Pencil size={14} strokeWidth={1.5} />
             </button>
           )}
-          <div className={styles.bubble}>{message.content}</div>
+          <div className={styles.bubble}>
+            <ReactMarkdown components={mdComponents} urlTransform={mdUrlTransform}>
+              {message.content}
+            </ReactMarkdown>
+          </div>
         </div>
       </div>
     );
@@ -56,7 +73,11 @@ export default function Message({ message, onRetryAction, onModifyAction, editDi
   if (message.status === 'failed') {
     return (
       <div className={styles.assistantWrapper}>
-        {message.content && <ReactMarkdown>{message.content}</ReactMarkdown>}
+        {message.content && (
+          <ReactMarkdown components={mdComponents} urlTransform={mdUrlTransform}>
+            {message.content}
+          </ReactMarkdown>
+        )}
         <div className={styles.errorRow}>
           <span>Something went wrong generating this response.</span>
           <button className={styles.retryButton} onClick={onRetryAction}>
@@ -70,7 +91,9 @@ export default function Message({ message, onRetryAction, onModifyAction, editDi
 
   return (
     <div className={styles.assistantWrapper}>
-      <ReactMarkdown>{message.content}</ReactMarkdown>
+      <ReactMarkdown components={mdComponents} urlTransform={mdUrlTransform}>
+        {message.content}
+      </ReactMarkdown>
       {message.status === 'pending' && <span className={styles.cursor} />}
     </div>
   );

@@ -4,6 +4,38 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowUp, X } from 'lucide-react';
 import styles from './MessageInput.module.css';
 
+const MAX_IMAGE_BYTES = 3 * 1024 * 1024;
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+const IMAGE_MARKDOWN_PATTERN = /!\[[^\]]*\]\((data:image\/[^)]+)\)/g;
+
+/** Replaces `![image](data:...)` runs with short `[image-N]` placeholders, recording the mapping. */
+function extractImagePlaceholders(text: string, images: Map<string, string>, counter: { current: number }) {
+  return text.replace(IMAGE_MARKDOWN_PATTERN, (_match, dataUrl: string) => {
+    counter.current += 1;
+    const token = `[image-${counter.current}]`;
+    images.set(token, dataUrl);
+    return token;
+  });
+}
+
+/** Reverses extractImagePlaceholders — swaps placeholders back to real Markdown image syntax before sending. */
+function expandImagePlaceholders(text: string, images: Map<string, string>) {
+  let result = text;
+  for (const [token, dataUrl] of images) {
+    result = result.split(token).join(`![image](${dataUrl})`);
+  }
+  return result;
+}
+
 type MessageInputProps = {
   onSendAction: (content: string) => void;
   disableSend?: boolean;
@@ -15,7 +47,10 @@ type MessageInputProps = {
 };
 
 export default function MessageInput({ onSendAction, disableSend, initialValue = '', onCancelAction, autoFocus }: MessageInputProps) {
-  const [value, setValue] = useState(initialValue);
+  const pendingImagesRef = useRef<Map<string, string>>(new Map());
+  const imageCounterRef = useRef(0);
+  const [value, setValue] = useState(() => extractImagePlaceholders(initialValue, pendingImagesRef.current, imageCounterRef));
+  const [pasteError, setPasteError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isEditVariant = onCancelAction !== undefined;
 
@@ -35,7 +70,9 @@ export default function MessageInput({ onSendAction, disableSend, initialValue =
   const handleSend = () => {
     const trimmed = value.trim();
     if (!trimmed) return;
-    onSendAction(trimmed);
+    onSendAction(expandImagePlaceholders(trimmed, pendingImagesRef.current));
+    pendingImagesRef.current.clear();
+    imageCounterRef.current = 0;
     setValue('');
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -56,6 +93,47 @@ export default function MessageInput({ onSendAction, disableSend, initialValue =
     setValue(e.target.value);
     e.target.style.height = 'auto';
     e.target.style.height = `${e.target.scrollHeight}px`;
+    setPasteError(null);
+  };
+
+  const insertAtCursor = (text: string) => {
+    const el = textareaRef.current;
+    const start = el?.selectionStart ?? value.length;
+    const end = el?.selectionEnd ?? value.length;
+    const nextValue = value.slice(0, start) + text + value.slice(end);
+    setValue(nextValue);
+    requestAnimationFrame(() => {
+      if (!el) return;
+      el.style.height = 'auto';
+      el.style.height = `${el.scrollHeight}px`;
+      const cursorPos = start + text.length;
+      el.setSelectionRange(cursorPos, cursorPos);
+    });
+  };
+
+  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const imageFiles = Array.from(e.clipboardData.items)
+      .filter(item => item.type.startsWith('image/'))
+      .map(item => item.getAsFile())
+      .filter((file): file is File => file !== null);
+
+    if (imageFiles.length === 0) return;
+    e.preventDefault();
+
+    if (imageFiles.some(file => file.size > MAX_IMAGE_BYTES)) {
+      setPasteError('Image is too large to paste (max 3MB).');
+      return;
+    }
+    setPasteError(null);
+
+    const dataUrls = await Promise.all(imageFiles.map(readFileAsDataUrl));
+    const tokens = dataUrls.map(url => {
+      imageCounterRef.current += 1;
+      const token = `[image-${imageCounterRef.current}]`;
+      pendingImagesRef.current.set(token, url);
+      return token;
+    });
+    insertAtCursor(tokens.join('\n'));
   };
 
   return (
@@ -70,6 +148,7 @@ export default function MessageInput({ onSendAction, disableSend, initialValue =
           value={value}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
         />
         <div className={styles.rightActions}>
           {onCancelAction && (
@@ -87,6 +166,7 @@ export default function MessageInput({ onSendAction, disableSend, initialValue =
           </button>
         </div>
       </div>
+      {pasteError && <div className={styles.pasteError}>{pasteError}</div>}
     </div>
   );
 }
