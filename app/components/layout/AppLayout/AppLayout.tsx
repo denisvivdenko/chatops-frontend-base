@@ -15,6 +15,7 @@ export default function AppLayout({ backendUrl }: { backendUrl: string }) {
     activeMessages,
     sendMessage,
     retryMessage,
+    modifyMessage,
     deleteChat,
     logout,
     notFoundReason,
@@ -38,6 +39,11 @@ export default function AppLayout({ backendUrl }: { backendUrl: string }) {
           onSendMessageAction={sendMessage}
           onRetryMessageAction={
             activeChatId ? (messageId: string) => retryMessage(activeChatId, messageId) : undefined
+          }
+          onModifyMessageAction={
+            activeChatId
+              ? (messageId: string, content: string) => modifyMessage(activeChatId, messageId, content)
+              : undefined
           }
         />
       </Layout>

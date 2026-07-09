@@ -308,6 +308,35 @@ export function useBackendChatService(baseUrl: string) {
     }
   }
 
+  const modifyMessage = useCallback(async function modifyMessage(chatId: string, messageId: string, content: string) {
+    let res: Response;
+    try {
+      res = await authorizedFetch(baseUrl, `/chats/${chatId}/messages/${messageId}/modify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content }),
+      });
+    } catch (err) {
+      handleFetchError(err);
+      return;
+    }
+
+    if (!res.ok) {
+      if (handleFetchError(new HttpError(res.status))) return;
+      // 409s (e.g. a reply is still streaming) or a stale message id - reconcile with the backend.
+      fetchMessages(baseUrl, chatId).then(setActiveMessages).catch(handleFetchError);
+      return;
+    }
+
+    const assistantMessage = mapMessage(await res.json());
+    setActiveMessages(prev => {
+      const idx = prev.findIndex(m => m.id === messageId);
+      if (idx === -1) return prev;
+      return [...prev.slice(0, idx), { ...prev[idx], content }, assistantMessage];
+    });
+    attemptStream(chatId, assistantMessage.id, 0);
+  }, [baseUrl, attemptStream, handleFetchError]);
+
   const deleteChat = useCallback(async function deleteChat(chatId: string) {
     const res = await authorizedFetch(baseUrl, `/chats/${chatId}`, { method: 'DELETE' });
     if (!res.ok) {
@@ -334,6 +363,7 @@ export function useBackendChatService(baseUrl: string) {
     activeMessages,
     sendMessage,
     retryMessage,
+    modifyMessage,
     deleteChat,
     logout,
     notFoundReason,

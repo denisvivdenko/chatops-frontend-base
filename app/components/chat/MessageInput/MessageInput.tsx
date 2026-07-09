@@ -1,17 +1,36 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { ArrowUp } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowUp, X } from 'lucide-react';
 import styles from './MessageInput.module.css';
 
 type MessageInputProps = {
   onSendAction: (content: string) => void;
   disableSend?: boolean;
+  /** Seeds the textarea and switches this into a compact edit-in-place variant. */
+  initialValue?: string;
+  /** Presence of this prop is what puts the input into edit mode (adds a Cancel button, Escape-to-cancel). */
+  onCancelAction?: () => void;
+  autoFocus?: boolean;
 };
 
-export default function MessageInput({ onSendAction, disableSend }: MessageInputProps) {
-  const [value, setValue] = useState('');
+export default function MessageInput({ onSendAction, disableSend, initialValue = '', onCancelAction, autoFocus }: MessageInputProps) {
+  const [value, setValue] = useState(initialValue);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isEditVariant = onCancelAction !== undefined;
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+    if (autoFocus) {
+      el.focus();
+      el.setSelectionRange(el.value.length, el.value.length);
+    }
+    // Only meant to run once, on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSend = () => {
     const trimmed = value.trim();
@@ -27,6 +46,9 @@ export default function MessageInput({ onSendAction, disableSend }: MessageInput
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       if (!disableSend) handleSend();
+    } else if (e.key === 'Escape' && onCancelAction) {
+      e.preventDefault();
+      onCancelAction();
     }
   };
 
@@ -37,7 +59,7 @@ export default function MessageInput({ onSendAction, disableSend }: MessageInput
   };
 
   return (
-    <div className={styles.wrapper}>
+    <div className={`${styles.wrapper} ${isEditVariant ? styles.compact : ''}`}>
       <div className={styles.container}>
         {/* left slot — future home of the + button */}
         <textarea
@@ -49,13 +71,17 @@ export default function MessageInput({ onSendAction, disableSend }: MessageInput
           onChange={handleChange}
           onKeyDown={handleKeyDown}
         />
-        {/* right slot — future home of mic and other actions */}
         <div className={styles.rightActions}>
+          {onCancelAction && (
+            <button className={styles.cancelButton} onClick={onCancelAction} aria-label="Cancel edit">
+              <X size={16} strokeWidth={2} />
+            </button>
+          )}
           <button
             className={styles.sendButton}
             onClick={handleSend}
             disabled={disableSend || !value.trim()}
-            aria-label="Send message"
+            aria-label={isEditVariant ? 'Save edit' : 'Send message'}
           >
             <ArrowUp size={16} strokeWidth={2} />
           </button>

@@ -6,6 +6,12 @@
   box-sizing: border-box;
 }
 
+.wrapper.compact {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
 .container {
   display: flex;
   align-items: flex-end;
@@ -58,4 +64,23 @@
 .sendButton:disabled {
   opacity: 0.3;
   cursor: default;
+}
+
+.cancelButton {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+.cancelButton:hover {
+  background: var(--color-bg-subtle);
+  color: var(--color-text);
 }
