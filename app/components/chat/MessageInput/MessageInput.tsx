@@ -1,10 +1,16 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { ArrowUp, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowUp, Image as ImageIcon, X } from 'lucide-react';
 import styles from './MessageInput.module.css';
 
 const MAX_IMAGE_BYTES = 3 * 1024 * 1024;
+
+type Attachment = {
+  id: string;
+  name: string | null;
+  dataUrl: string;
+};
 
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -15,25 +21,18 @@ function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
-const IMAGE_MARKDOWN_PATTERN = /!\[[^\]]*\]\((data:image\/[^)]+)\)/g;
+const IMAGE_MARKDOWN_PATTERN = /!\[([^\]]*)\]\((data:image\/[^)]+)\)/g;
 
-/** Replaces `![image](data:...)` runs with short `[image-N]` placeholders, recording the mapping. */
-function extractImagePlaceholders(text: string, images: Map<string, string>, counter: { current: number }) {
-  return text.replace(IMAGE_MARKDOWN_PATTERN, (_match, dataUrl: string) => {
-    counter.current += 1;
-    const token = `[image-${counter.current}]`;
-    images.set(token, dataUrl);
-    return token;
-  });
-}
-
-/** Reverses extractImagePlaceholders — swaps placeholders back to real Markdown image syntax before sending. */
-function expandImagePlaceholders(text: string, images: Map<string, string>) {
-  let result = text;
-  for (const [token, dataUrl] of images) {
-    result = result.split(token).join(`![image](${dataUrl})`);
-  }
-  return result;
+/** Pulls `![name](data:...)` runs out of existing content (edit mode) into attachment cards, leaving the rest as plain text. */
+function splitContentAndAttachments(content: string): { text: string; attachments: Attachment[] } {
+  const attachments: Attachment[] = [];
+  const text = content
+    .replace(IMAGE_MARKDOWN_PATTERN, (_match, name: string, dataUrl: string) => {
+      attachments.push({ id: `image-${attachments.length + 1}`, name: name || null, dataUrl });
+      return '';
+    })
+    .trim();
+  return { text, attachments };
 }
 
 type MessageInputProps = {
@@ -47,10 +46,14 @@ type MessageInputProps = {
 };
 
 export default function MessageInput({ onSendAction, disableSend, initialValue = '', onCancelAction, autoFocus }: MessageInputProps) {
-  const pendingImagesRef = useRef<Map<string, string>>(new Map());
-  const imageCounterRef = useRef(0);
-  const [value, setValue] = useState(() => extractImagePlaceholders(initialValue, pendingImagesRef.current, imageCounterRef));
+  // Only meant to run once, on mount — initialValue just seeds the composer.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const initialSplit = useMemo(() => splitContentAndAttachments(initialValue), []);
+
+  const [value, setValue] = useState(initialSplit.text);
+  const [attachments, setAttachments] = useState<Attachment[]>(initialSplit.attachments);
   const [pasteError, setPasteError] = useState<string | null>(null);
+  const imageCounterRef = useRef(initialSplit.attachments.length);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isEditVariant = onCancelAction !== undefined;
 
@@ -69,11 +72,15 @@ export default function MessageInput({ onSendAction, disableSend, initialValue =
 
   const handleSend = () => {
     const trimmed = value.trim();
-    if (!trimmed) return;
-    onSendAction(expandImagePlaceholders(trimmed, pendingImagesRef.current));
-    pendingImagesRef.current.clear();
-    imageCounterRef.current = 0;
+    if (!trimmed && attachments.length === 0) return;
+
+    const imagesMarkdown = attachments.map(attachment => `![${attachment.name ?? attachment.id}](${attachment.dataUrl})`).join('\n');
+    const content = [trimmed, imagesMarkdown].filter(Boolean).join('\n\n');
+
+    onSendAction(content);
     setValue('');
+    setAttachments([]);
+    imageCounterRef.current = 0;
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
@@ -96,21 +103,6 @@ export default function MessageInput({ onSendAction, disableSend, initialValue =
     setPasteError(null);
   };
 
-  const insertAtCursor = (text: string) => {
-    const el = textareaRef.current;
-    const start = el?.selectionStart ?? value.length;
-    const end = el?.selectionEnd ?? value.length;
-    const nextValue = value.slice(0, start) + text + value.slice(end);
-    setValue(nextValue);
-    requestAnimationFrame(() => {
-      if (!el) return;
-      el.style.height = 'auto';
-      el.style.height = `${el.scrollHeight}px`;
-      const cursorPos = start + text.length;
-      el.setSelectionRange(cursorPos, cursorPos);
-    });
-  };
-
   const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const imageFiles = Array.from(e.clipboardData.items)
       .filter(item => item.type.startsWith('image/'))
@@ -126,14 +118,20 @@ export default function MessageInput({ onSendAction, disableSend, initialValue =
     }
     setPasteError(null);
 
-    const dataUrls = await Promise.all(imageFiles.map(readFileAsDataUrl));
-    const tokens = dataUrls.map(url => {
-      imageCounterRef.current += 1;
-      const token = `[image-${imageCounterRef.current}]`;
-      pendingImagesRef.current.set(token, url);
-      return token;
-    });
-    insertAtCursor(tokens.join('\n'));
+    const newAttachments = await Promise.all(
+      imageFiles.map(async file => {
+        imageCounterRef.current += 1;
+        const dataUrl = await readFileAsDataUrl(file);
+        // Clipboard pastes report the same generic filename (e.g. "image.png") for every file
+        // regardless of browser, so it can't distinguish cards — use the id-based label instead.
+        return { id: `image-${imageCounterRef.current}`, name: null, dataUrl };
+      })
+    );
+    setAttachments(prev => [...prev, ...newAttachments]);
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachments(prev => prev.filter(attachment => attachment.id !== id));
   };
 
   return (
@@ -159,13 +157,31 @@ export default function MessageInput({ onSendAction, disableSend, initialValue =
           <button
             className={styles.sendButton}
             onClick={handleSend}
-            disabled={disableSend || !value.trim()}
+            disabled={disableSend || (!value.trim() && attachments.length === 0)}
             aria-label={isEditVariant ? 'Save edit' : 'Send message'}
           >
             <ArrowUp size={16} strokeWidth={2} />
           </button>
         </div>
       </div>
+      {attachments.length > 0 && (
+        <div className={styles.attachmentList}>
+          {attachments.map(attachment => (
+            <div key={attachment.id} className={styles.attachmentCard}>
+              <ImageIcon size={14} strokeWidth={1.5} />
+              <span className={styles.attachmentName}>{attachment.name ?? attachment.id}</span>
+              <button
+                type="button"
+                className={styles.attachmentRemove}
+                onClick={() => removeAttachment(attachment.id)}
+                aria-label={`Remove ${attachment.name ?? attachment.id}`}
+              >
+                <X size={12} strokeWidth={2} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
       {pasteError && <div className={styles.pasteError}>{pasteError}</div>}
     </div>
   );
