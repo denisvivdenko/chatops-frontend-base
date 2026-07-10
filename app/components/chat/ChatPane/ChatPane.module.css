@@ -5,19 +5,29 @@
 
 .inputBar {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  inset: 0;
   z-index: 10;
-  /* Messages scrolling underneath fade out over the top half of this bar's height and
-     are fully hidden for the bottom half, instead of being visible right up until they're
-     clipped by the input pill's own opaque background. */
-  background: linear-gradient(to bottom, transparent 0%, var(--color-bg) 50%, var(--color-bg) 100%);
-  /* Never actually scrolls (height tracks content) — this only exists so scrollbar-gutter
-     reserves the same fixed width as .messageArea, keeping both panels centered identically
-     whether or not the message list's scrollbar is currently showing. */
+  display: flex;
+  align-items: flex-end;
+  /* Spans the full pane (not just the input's own height) so the add-attachment dropdown,
+     which pops upward from the input, always stays within this box instead of being
+     clipped by the overflow below. The empty area above the input must stay click-through
+     so messages underneath remain interactive — see `.inputBar > *`. */
+  pointer-events: none;
+  /* Never actually scrolls (content is pinned to the bottom via flex) — this only exists
+     so scrollbar-gutter reserves the same fixed width as .messageArea, keeping both panels
+     centered identically whether or not the message list's scrollbar is currently showing. */
   overflow-y: auto;
   scrollbar-gutter: stable;
+  /* Messages scrolling underneath fade out over the input's own footprint (~5rem) and are
+     fully hidden by the halfway point, instead of being visible right up until they're
+     clipped by the input pill's own opaque background. Fixed lengths (not %) since this
+     box now spans the full pane, not just the input's height. */
+  background: linear-gradient(to bottom, transparent, transparent calc(100% - 5rem), var(--color-bg) calc(100% - 2.5rem));
+}
+
+.inputBar > * {
+  pointer-events: auto;
 }
 
 .messageArea {

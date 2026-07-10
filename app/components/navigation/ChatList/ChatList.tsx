@@ -21,7 +21,7 @@ export default function ChatList({ chats, activeChatId, isLoadingChats, onNaviga
         className={`${styles.item} ${activeChatId === null ? styles.itemActive : ''}`}
         onClick={onNavigateAction}
       >
-        <Plus className={styles.icon} size={20} strokeWidth={2} />
+        <Plus className={styles.icon} size={20} strokeWidth={1.5} />
         <span className={styles.itemText}>New chat</span>
       </Link>
       {isLoadingChats ? (

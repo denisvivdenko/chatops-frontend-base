@@ -57,7 +57,7 @@ export default function Message({ message, onRetryAction, onModifyAction, editDi
               disabled={editDisabled}
               aria-label="Edit message"
             >
-              <Pencil size={14} strokeWidth={2} />
+              <Pencil size={14} strokeWidth={1.5} />
             </button>
           )}
           <div className={styles.bubble}>
@@ -81,7 +81,7 @@ export default function Message({ message, onRetryAction, onModifyAction, editDi
         <div className={styles.errorRow}>
           <span>Something went wrong generating this response.</span>
           <button className={styles.retryButton} onClick={onRetryAction}>
-            <RotateCw size={14} strokeWidth={2} />
+            <RotateCw size={14} strokeWidth={1.5} />
             Retry
           </button>
         </div>

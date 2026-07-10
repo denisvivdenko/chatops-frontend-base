@@ -183,12 +183,12 @@ export default function MessageInput({ onSendAction, disableSend, initialValue =
             aria-expanded={isAddMenuOpen}
             onClick={() => setIsAddMenuOpen(open => !open)}
           >
-            <Plus size={16} strokeWidth={2} />
+            <Plus size={16} strokeWidth={1.5} />
           </button>
           {isAddMenuOpen && (
             <div className={styles.addMenuList} role="menu">
               <button type="button" className={styles.addMenuItem} role="menuitem" onClick={handleImageButtonClick}>
-                <ImageIcon size={14} strokeWidth={2} />
+                <ImageIcon size={14} strokeWidth={1.5} />
                 Image
               </button>
             </div>
@@ -215,7 +215,7 @@ export default function MessageInput({ onSendAction, disableSend, initialValue =
         <div className={styles.rightActions}>
           {onCancelAction && (
             <button className={styles.cancelButton} onClick={onCancelAction} aria-label="Cancel edit">
-              <X size={16} strokeWidth={2} />
+              <X size={16} strokeWidth={1.5} />
             </button>
           )}
           <button
@@ -224,7 +224,7 @@ export default function MessageInput({ onSendAction, disableSend, initialValue =
             disabled={disableSend || (!value.trim() && attachments.length === 0)}
             aria-label={isEditVariant ? 'Save edit' : 'Send message'}
           >
-            <ArrowUp size={16} strokeWidth={2} />
+            <ArrowUp size={16} strokeWidth={1.5} />
           </button>
         </div>
       </div>
@@ -232,7 +232,7 @@ export default function MessageInput({ onSendAction, disableSend, initialValue =
         <div className={styles.attachmentList}>
           {attachments.map(attachment => (
             <div key={attachment.id} className={styles.attachmentCard}>
-              <ImageIcon size={14} strokeWidth={2} />
+              <ImageIcon size={14} strokeWidth={1.5} />
               <span className={styles.attachmentName}>{attachment.name ?? attachment.id}</span>
               <button
                 type="button"
@@ -240,7 +240,7 @@ export default function MessageInput({ onSendAction, disableSend, initialValue =
                 onClick={() => removeAttachment(attachment.id)}
                 aria-label={`Remove ${attachment.name ?? attachment.id}`}
               >
-                <X size={12} strokeWidth={2} />
+                <X size={12} strokeWidth={1.5} />
               </button>
             </div>
           ))}

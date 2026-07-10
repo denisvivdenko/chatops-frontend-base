@@ -51,7 +51,6 @@
 .label {
   opacity: 0;
   font-size: 0.875em;
-  font-weight: 500;
   transition: opacity 0.1s ease;
 }
 

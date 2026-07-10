@@ -54,7 +54,7 @@ export default function ChatItemMenu({ onDeleteAction }: Props) {
         aria-expanded={open}
         onClick={() => (open ? close() : setOpen(true))}
       >
-        <MoreVertical size={16} strokeWidth={2} />
+        <MoreVertical size={16} strokeWidth={1.5} />
       </button>
       {open && (
         <div className={styles.menu} role="menu">
@@ -63,7 +63,7 @@ export default function ChatItemMenu({ onDeleteAction }: Props) {
             role="menuitem"
             onClick={handleDeleteClick}
           >
-            <Trash2 size={14} strokeWidth={2} />
+            <Trash2 size={14} strokeWidth={1.5} />
             {confirming ? 'Confirm delete' : 'Delete'}
           </button>
         </div>

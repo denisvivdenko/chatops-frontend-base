@@ -18,7 +18,7 @@ export default function NotFoundNotice({ reason, onGoHomeAction, onStayAction }:
   return (
     <div className={styles.wrapper} role="alert">
       <div className={styles.notice}>
-        <SearchX size={20} className={styles.icon} />
+        <SearchX size={20} strokeWidth={1.5} className={styles.icon} />
         <p className={styles.message}>{MESSAGES[reason]}</p>
         <div className={styles.actions}>
           <button className={styles.primaryButton} onClick={onGoHomeAction}>

@@ -47,10 +47,10 @@ export default function MobileMenu({
           aria-label={logout.confirming ? 'Confirm log out' : 'Log out'}
           onClick={logout.handleClick}
         >
-          <LogOut size={20} />
+          <LogOut size={20} strokeWidth={1.5} />
         </button>
         <button className={styles.closeBtn} aria-label="Close menu" onClick={onCloseAction}>
-          <X size={20} />
+          <X size={20} strokeWidth={1.5} />
         </button>
       </div>
       <div className={styles.chatListWrapper}>

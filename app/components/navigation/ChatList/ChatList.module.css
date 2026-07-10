@@ -26,7 +26,6 @@
   transition: background 0.15s;
   overflow: hidden;
   font-size: 0.875em;
-  font-weight: 500;
 }
 
 .item:hover {
