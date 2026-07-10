@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowUp, Image as ImageIcon, X } from 'lucide-react';
+import { ArrowUp, Image as ImageIcon, Plus, X } from 'lucide-react';
 import styles from './MessageInput.module.css';
 
 const MAX_IMAGE_BYTES = 3 * 1024 * 1024;
@@ -53,8 +53,11 @@ export default function MessageInput({ onSendAction, disableSend, initialValue =
   const [value, setValue] = useState(initialSplit.text);
   const [attachments, setAttachments] = useState<Attachment[]>(initialSplit.attachments);
   const [pasteError, setPasteError] = useState<string | null>(null);
+  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   const imageCounterRef = useRef(initialSplit.attachments.length);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const addMenuRef = useRef<HTMLDivElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const isEditVariant = onCancelAction !== undefined;
 
   useEffect(() => {
@@ -69,6 +72,24 @@ export default function MessageInput({ onSendAction, disableSend, initialValue =
     // Only meant to run once, on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!isAddMenuOpen) return;
+
+    function handlePointerDown(e: MouseEvent) {
+      if (addMenuRef.current && !addMenuRef.current.contains(e.target as Node)) setIsAddMenuOpen(false);
+    }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setIsAddMenuOpen(false);
+    }
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isAddMenuOpen]);
 
   const handleSend = () => {
     const trimmed = value.trim();
@@ -103,17 +124,11 @@ export default function MessageInput({ onSendAction, disableSend, initialValue =
     setPasteError(null);
   };
 
-  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    const imageFiles = Array.from(e.clipboardData.items)
-      .filter(item => item.type.startsWith('image/'))
-      .map(item => item.getAsFile())
-      .filter((file): file is File => file !== null);
-
+  const addImageFiles = async (imageFiles: File[], { keepNames }: { keepNames: boolean }) => {
     if (imageFiles.length === 0) return;
-    e.preventDefault();
 
     if (imageFiles.some(file => file.size > MAX_IMAGE_BYTES)) {
-      setPasteError('Image is too large to paste (max 3MB).');
+      setPasteError('Image is too large to add (max 3MB).');
       return;
     }
     setPasteError(null);
@@ -124,10 +139,32 @@ export default function MessageInput({ onSendAction, disableSend, initialValue =
         const dataUrl = await readFileAsDataUrl(file);
         // Clipboard pastes report the same generic filename (e.g. "image.png") for every file
         // regardless of browser, so it can't distinguish cards — use the id-based label instead.
-        return { id: `image-${imageCounterRef.current}`, name: null, dataUrl };
+        return { id: `image-${imageCounterRef.current}`, name: keepNames ? file.name : null, dataUrl };
       })
     );
     setAttachments(prev => [...prev, ...newAttachments]);
+  };
+
+  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const imageFiles = Array.from(e.clipboardData.items)
+      .filter(item => item.type.startsWith('image/'))
+      .map(item => item.getAsFile())
+      .filter((file): file is File => file !== null);
+
+    if (imageFiles.length === 0) return;
+    e.preventDefault();
+    await addImageFiles(imageFiles, { keepNames: false });
+  };
+
+  const handleImageButtonClick = () => {
+    setIsAddMenuOpen(false);
+    imageInputRef.current?.click();
+  };
+
+  const handleImageInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const imageFiles = Array.from(e.target.files ?? []);
+    e.target.value = '';
+    await addImageFiles(imageFiles, { keepNames: true });
   };
 
   const removeAttachment = (id: string) => {
@@ -137,7 +174,34 @@ export default function MessageInput({ onSendAction, disableSend, initialValue =
   return (
     <div className={`${styles.wrapper} ${isEditVariant ? styles.compact : ''}`}>
       <div className={styles.container}>
-        {/* left slot — future home of the + button */}
+        <div className={styles.addMenu} ref={addMenuRef}>
+          <button
+            type="button"
+            className={styles.addButton}
+            aria-label="Add attachment"
+            aria-haspopup="menu"
+            aria-expanded={isAddMenuOpen}
+            onClick={() => setIsAddMenuOpen(open => !open)}
+          >
+            <Plus size={16} strokeWidth={2} />
+          </button>
+          {isAddMenuOpen && (
+            <div className={styles.addMenuList} role="menu">
+              <button type="button" className={styles.addMenuItem} role="menuitem" onClick={handleImageButtonClick}>
+                <ImageIcon size={14} strokeWidth={1.5} />
+                Image
+              </button>
+            </div>
+          )}
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            hidden
+            onChange={handleImageInputChange}
+          />
+        </div>
         <textarea
           ref={textareaRef}
           className={styles.textarea}
