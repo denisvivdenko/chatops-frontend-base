@@ -188,7 +188,7 @@ export default function MessageInput({ onSendAction, disableSend, initialValue =
           {isAddMenuOpen && (
             <div className={styles.addMenuList} role="menu">
               <button type="button" className={styles.addMenuItem} role="menuitem" onClick={handleImageButtonClick}>
-                <ImageIcon size={14} strokeWidth={1.5} />
+                <ImageIcon size={14} strokeWidth={2} />
                 Image
               </button>
             </div>
@@ -232,7 +232,7 @@ export default function MessageInput({ onSendAction, disableSend, initialValue =
         <div className={styles.attachmentList}>
           {attachments.map(attachment => (
             <div key={attachment.id} className={styles.attachmentCard}>
-              <ImageIcon size={14} strokeWidth={1.5} />
+              <ImageIcon size={14} strokeWidth={2} />
               <span className={styles.attachmentName}>{attachment.name ?? attachment.id}</span>
               <button
                 type="button"

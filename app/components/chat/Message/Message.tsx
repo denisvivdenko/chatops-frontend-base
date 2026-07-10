@@ -57,7 +57,7 @@ export default function Message({ message, onRetryAction, onModifyAction, editDi
               disabled={editDisabled}
               aria-label="Edit message"
             >
-              <Pencil size={14} strokeWidth={1.5} />
+              <Pencil size={14} strokeWidth={2} />
             </button>
           )}
           <div className={styles.bubble}>

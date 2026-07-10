@@ -27,7 +27,7 @@ export default function Sidebar({ chats, activeChatId, isLoadingChats, onLogoutA
         aria-label="Toggle sidebar"
         onClick={() => setExpanded(v => !v)}
       >
-        <PanelLeft className={styles.icon} size={20} strokeWidth={1} />
+        <PanelLeft className={styles.icon} size={20} strokeWidth={2} />
         <span className={styles.label}>Collapse</span>
       </button>
 
@@ -43,7 +43,7 @@ export default function Sidebar({ chats, activeChatId, isLoadingChats, onLogoutA
         aria-label={logout.confirming ? 'Confirm log out' : 'Log out'}
         onClick={logout.handleClick}
       >
-        <LogOut className={styles.icon} size={20} strokeWidth={1} />
+        <LogOut className={styles.icon} size={20} strokeWidth={2} />
         <span className={styles.label}>{logout.confirming ? 'Confirm logout' : 'Log out'}</span>
       </button>
     </aside>
