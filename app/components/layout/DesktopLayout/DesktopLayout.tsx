@@ -1,26 +1,10 @@
-import type { Chat } from '../../../types/chat';
 import Sidebar from '../../navigation/Sidebar/Sidebar';
 import styles from './DesktopLayout.module.css';
 
-type Props = {
-  chats: Chat[];
-  activeChatId: string | null;
-  isLoadingChats?: boolean;
-  onLogoutAction(): void;
-  onDeleteChatAction(chatId: string): void;
-  children: React.ReactNode;
-};
-
-export default function DesktopLayout({ chats, activeChatId, isLoadingChats, onLogoutAction, onDeleteChatAction, children }: Props) {
+export default function DesktopLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className={styles.layout}>
-      <Sidebar
-        chats={chats}
-        activeChatId={activeChatId}
-        isLoadingChats={isLoadingChats}
-        onLogoutAction={onLogoutAction}
-        onDeleteChatAction={onDeleteChatAction}
-      />
+      <Sidebar />
       <div className={styles.main}>
         {children}
       </div>

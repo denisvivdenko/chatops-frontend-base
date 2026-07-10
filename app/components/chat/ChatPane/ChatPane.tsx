@@ -1,25 +1,17 @@
 'use client';
 
-import type { Message } from '../../../types/chat';
 import MessageList from '../MessageList/MessageList';
 import MessageInput from '../MessageInput/MessageInput';
 import Spinner from '../../feedback/Spinner/Spinner';
+import { useMessages, useChatActions } from '../../../context/chatContext';
 import styles from './ChatPane.module.css';
 
-type Props = {
-  messages: Message[];
-  isLoadingMessages?: boolean;
-  onSendMessageAction(content: string): void;
-  onRetryMessageAction?(messageId: string): void;
-  onModifyMessageAction?(messageId: string, content: string): void;
-};
+export default function ChatPane() {
+  const { activeMessages, isLoadingMessages } = useMessages();
+  const { sendMessage } = useChatActions();
 
-export default function ChatPane({ messages, isLoadingMessages, onSendMessageAction, onRetryMessageAction, onModifyMessageAction }: Props) {
-  const lastMessage = messages[messages.length - 1];
+  const lastMessage = activeMessages[activeMessages.length - 1];
   const lastMessageUnresolved = lastMessage?.status === 'pending' || lastMessage?.status === 'failed';
-  // Editing is blocked only while a reply is actively streaming, not while one has failed
-  // (modify.md: "Editing after a failed reply is fine").
-  const editingBlocked = lastMessage?.status === 'pending';
 
   return (
     <div className={styles.pane}>
@@ -29,16 +21,11 @@ export default function ChatPane({ messages, isLoadingMessages, onSendMessageAct
             <Spinner />
           </div>
         ) : (
-          <MessageList
-            messages={messages}
-            onRetryMessageAction={onRetryMessageAction}
-            onModifyMessageAction={onModifyMessageAction}
-            editingBlocked={editingBlocked}
-          />
+          <MessageList />
         )}
       </div>
       <div className={styles.inputBar}>
-        <MessageInput onSendAction={onSendMessageAction} disableSend={lastMessageUnresolved} />
+        <MessageInput onSendAction={sendMessage} disableSend={lastMessageUnresolved} />
       </div>
     </div>
   );

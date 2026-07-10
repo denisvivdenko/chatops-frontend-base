@@ -3,33 +3,20 @@
 import { useRef } from 'react';
 import { X, LogOut } from 'lucide-react';
 import ChatList from '../ChatList/ChatList';
-import type { Chat } from '../../../types/chat';
+import { useChatActions } from '../../../context/chatContext';
 import { useConfirmAction } from '../../../hooks/useConfirmAction';
 import styles from './MobileMenu.module.css';
 
 type Props = {
-  chats: Chat[];
-  activeChatId: string | null;
-  isLoadingChats?: boolean;
   onCloseAction(): void;
-  onLogoutAction(): void;
-  onDeleteChatAction(chatId: string): void;
   isClosing?: boolean;
   onAnimationEndAction?(): void;
 };
 
-export default function MobileMenu({
-  chats,
-  activeChatId,
-  isLoadingChats,
-  onCloseAction,
-  onLogoutAction,
-  onDeleteChatAction,
-  isClosing,
-  onAnimationEndAction,
-}: Props) {
+export default function MobileMenu({ onCloseAction, isClosing, onAnimationEndAction }: Props) {
+  const { logout: onLogout } = useChatActions();
   const logoutRef = useRef<HTMLButtonElement>(null);
-  const logout = useConfirmAction(logoutRef, onLogoutAction);
+  const logout = useConfirmAction(logoutRef, onLogout);
 
   function handleAnimationEnd(e: React.AnimationEvent<HTMLDivElement>) {
     if (e.target === e.currentTarget) onAnimationEndAction?.();
@@ -54,13 +41,7 @@ export default function MobileMenu({
         </button>
       </div>
       <div className={styles.chatListWrapper}>
-        <ChatList
-          chats={chats}
-          activeChatId={activeChatId}
-          isLoadingChats={isLoadingChats}
-          onNavigateAction={onCloseAction}
-          onDeleteChatAction={onDeleteChatAction}
-        />
+        <ChatList onNavigateAction={onCloseAction} />
       </div>
     </div>
   );

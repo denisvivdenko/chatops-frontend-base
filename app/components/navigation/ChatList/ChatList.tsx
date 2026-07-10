@@ -1,19 +1,16 @@
+'use client';
+
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
-import type { Chat } from '../../../types/chat';
 import ChatItemMenu from '../ChatItemMenu/ChatItemMenu';
 import Spinner from '../../feedback/Spinner/Spinner';
+import { useChats, useChatActions } from '../../../context/chatContext';
 import styles from './ChatList.module.css';
 
-type ChatListProps = {
-  chats: Chat[];
-  activeChatId: string | null;
-  isLoadingChats?: boolean;
-  onNavigateAction?(): void;
-  onDeleteChatAction(chatId: string): void;
-};
+export default function ChatList({ onNavigateAction }: { onNavigateAction?(): void }) {
+  const { chats, activeChatId, isLoadingChats } = useChats();
+  const { deleteChat } = useChatActions();
 
-export default function ChatList({ chats, activeChatId, isLoadingChats, onNavigateAction, onDeleteChatAction }: ChatListProps) {
   return (
     <div className={styles.list}>
       <Link
@@ -39,7 +36,7 @@ export default function ChatList({ chats, activeChatId, isLoadingChats, onNaviga
             >
               <span className={styles.itemText}>{chat.title}</span>
             </Link>
-            <ChatItemMenu onDeleteAction={() => onDeleteChatAction(chat.id)} />
+            <ChatItemMenu onDeleteAction={() => deleteChat(chat.id)} />
           </div>
         ))
       )}

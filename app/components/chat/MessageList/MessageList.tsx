@@ -1,25 +1,21 @@
-import type { Message } from '../../../types/chat';
+'use client';
+
 import MessageComponent from '../Message/Message';
+import { useMessages } from '../../../context/chatContext';
 import styles from './MessageList.module.css';
 
-type MessageListProps = {
-  messages: Message[];
-  onRetryMessageAction?: (messageId: string) => void;
-  onModifyMessageAction?: (messageId: string, content: string) => void;
-  editingBlocked?: boolean;
-};
+export default function MessageList() {
+  const { activeMessages } = useMessages();
 
-export default function MessageList({ messages, onRetryMessageAction, onModifyMessageAction, editingBlocked }: MessageListProps) {
+  const lastMessage = activeMessages[activeMessages.length - 1];
+  // Editing is blocked only while a reply is actively streaming, not while one has failed
+  // (modify.md: "Editing after a failed reply is fine").
+  const editingBlocked = lastMessage?.status === 'pending';
+
   return (
     <div className={styles.inner}>
-      {messages.map(msg => (
-        <MessageComponent
-          key={msg.id}
-          message={msg}
-          onRetryAction={onRetryMessageAction ? () => onRetryMessageAction(msg.id) : undefined}
-          onModifyAction={onModifyMessageAction ? (content: string) => onModifyMessageAction(msg.id, content) : undefined}
-          editDisabled={editingBlocked}
-        />
+      {activeMessages.map(msg => (
+        <MessageComponent key={msg.id} message={msg} editDisabled={editingBlocked} />
       ))}
     </div>
   );

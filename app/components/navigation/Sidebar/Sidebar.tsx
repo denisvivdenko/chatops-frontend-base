@@ -3,22 +3,15 @@
 import { useRef, useState } from 'react';
 import { PanelLeft, LogOut } from 'lucide-react';
 import ChatList from '../ChatList/ChatList';
-import type { Chat } from '../../../types/chat';
+import { useChatActions } from '../../../context/chatContext';
 import { useConfirmAction } from '../../../hooks/useConfirmAction';
 import styles from './Sidebar.module.css';
 
-type SidebarProps = {
-  chats: Chat[];
-  activeChatId: string | null;
-  isLoadingChats?: boolean;
-  onLogoutAction(): void;
-  onDeleteChatAction(chatId: string): void;
-};
-
-export default function Sidebar({ chats, activeChatId, isLoadingChats, onLogoutAction, onDeleteChatAction }: SidebarProps) {
+export default function Sidebar() {
+  const { logout: onLogout } = useChatActions();
   const [expanded, setExpanded] = useState(true);
   const logoutRef = useRef<HTMLButtonElement>(null);
-  const logout = useConfirmAction(logoutRef, onLogoutAction);
+  const logout = useConfirmAction(logoutRef, onLogout);
 
   return (
     <aside className={`${styles.sidebar} ${expanded ? styles.expanded : ''}`}>
@@ -33,7 +26,7 @@ export default function Sidebar({ chats, activeChatId, isLoadingChats, onLogoutA
 
       {expanded && (
         <div className={styles.chatListWrapper}>
-          <ChatList chats={chats} activeChatId={activeChatId} isLoadingChats={isLoadingChats} onDeleteChatAction={onDeleteChatAction} />
+          <ChatList />
         </div>
       )}
 

@@ -1,14 +1,15 @@
-import { useState } from 'react';
+'use client';
+
+import { memo, useState } from 'react';
 import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import { Pencil, RotateCw } from 'lucide-react';
 import type { Message } from '../../../types/chat';
 import MessageInput from '../MessageInput/MessageInput';
+import { useChatActions } from '../../../context/chatContext';
 import styles from './Message.module.css';
 
 type MessageProps = {
   message: Message;
-  onRetryAction?: () => void;
-  onModifyAction?: (content: string) => void;
   editDisabled?: boolean;
 };
 
@@ -25,7 +26,21 @@ function mdUrlTransform(url: string) {
   return url.startsWith('data:image/') ? url : defaultUrlTransform(url);
 }
 
-export default function Message({ message, onRetryAction, onModifyAction, editDisabled }: MessageProps) {
+// Parsing markdown is the expensive part of rendering a message — pasted images live in
+// `content` as multi-MB base64 data URLs. Memoizing on `content` keeps a Message re-render
+// triggered by something else (e.g. `editDisabled` flipping when a reply starts streaming)
+// from re-parsing unchanged bodies. That synchronous re-parse of every image message is what
+// used to freeze the app for a moment on send in image-heavy chats.
+const MarkdownContent = memo(function MarkdownContent({ content }: { content: string }) {
+  return (
+    <ReactMarkdown components={mdComponents} urlTransform={mdUrlTransform}>
+      {content}
+    </ReactMarkdown>
+  );
+});
+
+function Message({ message, editDisabled }: MessageProps) {
+  const { retryMessage, modifyMessage } = useChatActions();
   const [isEditing, setIsEditing] = useState(false);
 
   if (message.role === 'user') {
@@ -39,7 +54,7 @@ export default function Message({ message, onRetryAction, onModifyAction, editDi
               onCancelAction={() => setIsEditing(false)}
               onSendAction={content => {
                 setIsEditing(false);
-                if (content !== message.content) onModifyAction?.(content);
+                if (content !== message.content) modifyMessage?.(message.id, content);
               }}
             />
           </div>
@@ -50,7 +65,7 @@ export default function Message({ message, onRetryAction, onModifyAction, editDi
     return (
       <div className={styles.userWrapper}>
         <div className={styles.userGroup}>
-          {onModifyAction && (
+          {modifyMessage && (
             <button
               className={styles.editButton}
               onClick={() => setIsEditing(true)}
@@ -61,9 +76,7 @@ export default function Message({ message, onRetryAction, onModifyAction, editDi
             </button>
           )}
           <div className={styles.bubble}>
-            <ReactMarkdown components={mdComponents} urlTransform={mdUrlTransform}>
-              {message.content}
-            </ReactMarkdown>
+            <MarkdownContent content={message.content} />
           </div>
         </div>
       </div>
@@ -73,14 +86,10 @@ export default function Message({ message, onRetryAction, onModifyAction, editDi
   if (message.status === 'failed') {
     return (
       <div className={styles.assistantWrapper}>
-        {message.content && (
-          <ReactMarkdown components={mdComponents} urlTransform={mdUrlTransform}>
-            {message.content}
-          </ReactMarkdown>
-        )}
+        {message.content && <MarkdownContent content={message.content} />}
         <div className={styles.errorRow}>
           <span>Something went wrong generating this response.</span>
-          <button className={styles.retryButton} onClick={onRetryAction}>
+          <button className={styles.retryButton} onClick={() => retryMessage?.(message.id)}>
             <RotateCw size={14} strokeWidth={1.5} />
             Retry
           </button>
@@ -91,10 +100,10 @@ export default function Message({ message, onRetryAction, onModifyAction, editDi
 
   return (
     <div className={styles.assistantWrapper}>
-      <ReactMarkdown components={mdComponents} urlTransform={mdUrlTransform}>
-        {message.content}
-      </ReactMarkdown>
+      <MarkdownContent content={message.content} />
       {message.status === 'pending' && <span className={styles.cursor} />}
     </div>
   );
 }
+
+export default memo(Message);

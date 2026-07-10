@@ -1,23 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import type { Chat } from '../../../types/chat';
 import TopBar from '../TopBar/TopBar';
 import MobileMenu from '../../navigation/MobileMenu/MobileMenu';
 import styles from './MobileLayout.module.css';
 
-type Props = {
-  chats: Chat[];
-  activeChatId: string | null;
-  isLoadingChats?: boolean;
-  onLogoutAction(): void;
-  onDeleteChatAction(chatId: string): void;
-  children: React.ReactNode;
-};
-
 type MenuState = 'closed' | 'open' | 'closing';
 
-export default function MobileLayout({ chats, activeChatId, isLoadingChats, onLogoutAction, onDeleteChatAction, children }: Props) {
+export default function MobileLayout({ children }: { children: React.ReactNode }) {
   const [menuState, setMenuState] = useState<MenuState>('closed');
 
   function handleClose() {
@@ -36,12 +26,7 @@ export default function MobileLayout({ chats, activeChatId, isLoadingChats, onLo
       {children}
       {menuState !== 'closed' && (
         <MobileMenu
-          chats={chats}
-          activeChatId={activeChatId}
-          isLoadingChats={isLoadingChats}
           onCloseAction={handleClose}
-          onLogoutAction={onLogoutAction}
-          onDeleteChatAction={onDeleteChatAction}
           isClosing={menuState === 'closing'}
           onAnimationEndAction={handleAnimationEnd}
         />

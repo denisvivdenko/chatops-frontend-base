@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowUp, Image as ImageIcon, Plus, X } from 'lucide-react';
 import styles from './MessageInput.module.css';
 
@@ -45,7 +45,7 @@ type MessageInputProps = {
   autoFocus?: boolean;
 };
 
-export default function MessageInput({ onSendAction, disableSend, initialValue = '', onCancelAction, autoFocus }: MessageInputProps) {
+function MessageInput({ onSendAction, disableSend, initialValue = '', onCancelAction, autoFocus }: MessageInputProps) {
   // Only meant to run once, on mount — initialValue just seeds the composer.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const initialSplit = useMemo(() => splitContentAndAttachments(initialValue), []);
@@ -250,3 +250,5 @@ export default function MessageInput({ onSendAction, disableSend, initialValue =
     </div>
   );
 }
+
+export default memo(MessageInput);

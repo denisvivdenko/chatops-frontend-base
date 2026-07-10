@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useReducer, useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import type { Chat, Message } from '../types/chat';
+import { chatReducer, initialChatState } from './chatReducer';
 import { ensureSession, authorizedFetch, resetSession } from './authSession';
 
 const MAX_RECONNECT_ATTEMPTS = 3;
@@ -61,33 +62,59 @@ async function fetchMessages(baseUrl: string, chatId: string): Promise<Message[]
   return data.map(mapMessage);
 }
 
-/** Reads an SSE body (fetch doesn't give us EventSource's framing for free) and emits each token. */
-async function readTokenStream(response: Response, onToken: (token: string) => void): Promise<void> {
+/**
+ * Reads an SSE body (fetch doesn't give us EventSource's framing for free) and emits tokens.
+ * Tokens are coalesced and flushed at most once per animation frame, so a fast stream drives
+ * ~60 re-renders/sec of the reply instead of one per token — the difference is invisible to
+ * the reader but keeps the render loop cheap. The post-stream reconcile refetches the
+ * authoritative content, so any dropped intra-frame granularity is inconsequential.
+ */
+async function readTokenStream(response: Response, onToken: (chunk: string) => void): Promise<void> {
   if (!response.body) return;
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
 
-  for (;;) {
-    const { value, done } = await reader.read();
-    if (done) return;
-    buffer += decoder.decode(value, { stream: true });
-
-    let boundary: number;
-    while ((boundary = buffer.indexOf('\n\n')) !== -1) {
-      const rawEvent = buffer.slice(0, boundary);
-      buffer = buffer.slice(boundary + 2);
-
-      const data = rawEvent
-        .split('\n')
-        .filter(line => line.startsWith('data:'))
-        .map(line => line.slice(5).trim())
-        .join('\n');
-      if (!data) continue;
-
-      const { token } = JSON.parse(data) as { seq_id: number; token: string };
-      onToken(token);
+  let pending = '';
+  let frame = 0;
+  const flush = () => {
+    frame = 0;
+    if (pending) {
+      const chunk = pending;
+      pending = '';
+      onToken(chunk);
     }
+  };
+  const schedule = () => {
+    if (!frame) frame = requestAnimationFrame(flush);
+  };
+
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) return;
+      buffer += decoder.decode(value, { stream: true });
+
+      let boundary: number;
+      while ((boundary = buffer.indexOf('\n\n')) !== -1) {
+        const rawEvent = buffer.slice(0, boundary);
+        buffer = buffer.slice(boundary + 2);
+
+        const data = rawEvent
+          .split('\n')
+          .filter(line => line.startsWith('data:'))
+          .map(line => line.slice(5).trim())
+          .join('\n');
+        if (!data) continue;
+
+        const { token } = JSON.parse(data) as { seq_id: number; token: string };
+        pending += token;
+        schedule();
+      }
+    }
+  } finally {
+    if (frame) cancelAnimationFrame(frame);
+    flush();
   }
 }
 
@@ -97,37 +124,34 @@ export function useBackendChatService(baseUrl: string) {
   const activeChatId = chatId ?? null;
 
   const [sessionReady, setSessionReady] = useState(false);
-  const [chats, setChats] = useState<Chat[]>([]);
-  const [isLoadingChats, setIsLoadingChats] = useState(true);
-  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
-  const [_activeMessages, setActiveMessages] = useState<Message[]>([]);
-  const [pendingNewChatMessage, setPendingNewChatMessage] = useState<Message | null>(null);
-  const activeMessages = activeChatId === null
-    ? (pendingNewChatMessage ? [pendingNewChatMessage] : [])
-    : _activeMessages;
-  const [notFoundReason, setNotFoundReason] = useState<'not-found' | 'forbidden' | null>(null);
+  const [state, dispatch] = useReducer(chatReducer, initialChatState);
   const streamAbortRef = useRef<AbortController | null>(null);
+
+  // The pending-new-chat message is shown only while on the home route (no chat id yet).
+  const activeMessages = activeChatId === null
+    ? (state.pendingNewChatMessage ? [state.pendingNewChatMessage] : [])
+    : state.activeMessages;
 
   const handleFetchError = useCallback((err: unknown): boolean => {
     if (err instanceof HttpError && err.status === 404) {
-      setNotFoundReason('not-found');
+      dispatch({ type: 'resourceNotFound', reason: 'not-found' });
       return true;
     }
     if (err instanceof HttpError && err.status === 403) {
-      setNotFoundReason('forbidden');
+      dispatch({ type: 'resourceNotFound', reason: 'forbidden' });
       return true;
     }
     return false;
   }, []);
 
   const goHome = useCallback(() => {
-    setNotFoundReason(null);
-    fetchChats(baseUrl).then(setChats);
+    dispatch({ type: 'resourceNotFoundDismissed' });
+    fetchChats(baseUrl).then(chats => dispatch({ type: 'chatsLoaded', chats }));
     router.push('/');
   }, [baseUrl, router]);
 
   const dismissResourceNotFound = useCallback(() => {
-    setNotFoundReason(null);
+    dispatch({ type: 'resourceNotFoundDismissed' });
   }, []);
 
   const attemptStream = useCallback(function attemptStream(chatId: string, messageId: string, attempt: number) {
@@ -150,20 +174,20 @@ export function useBackendChatService(baseUrl: string) {
 
       if (target?.status === 'pending') {
         if (attempt < MAX_RECONNECT_ATTEMPTS) {
-          setActiveMessages(messages.map(m => m.id === messageId ? { ...m, content: '' } : m));
+          dispatch({ type: 'messagesReplaced', messages: messages.map(m => m.id === messageId ? { ...m, content: '' } : m) });
           setTimeout(() => {
             if (!abort.signal.aborted) attemptStream(chatId, messageId, attempt + 1);
           }, RECONNECT_DELAY_MS);
         } else {
           // Gave up reconnecting; the backend may still consider this pending.
           // Reflect it as failed locally so the user gets a retry affordance.
-          setActiveMessages(messages.map(m => m.id === messageId ? { ...m, status: 'failed' } : m));
+          dispatch({ type: 'messagesReplaced', messages: messages.map(m => m.id === messageId ? { ...m, status: 'failed' } : m) });
         }
       } else {
-        setActiveMessages(messages);
+        dispatch({ type: 'messagesReplaced', messages });
       }
 
-      fetchChats(baseUrl).then(setChats);
+      fetchChats(baseUrl).then(chats => dispatch({ type: 'chatsLoaded', chats }));
     }
 
     // The server closes the connection both on normal completion and on
@@ -181,13 +205,7 @@ export function useBackendChatService(baseUrl: string) {
 
         await readTokenStream(response, (token) => {
           if (abort.signal.aborted) return;
-          setActiveMessages(prev =>
-            prev.map(m =>
-              m.id === messageId
-                ? { ...m, content: m.content ? m.content + token : token }
-                : m
-            )
-          );
+          dispatch({ type: 'tokenReceived', messageId, token });
         });
       } catch {
         if (abort.signal.aborted) return;
@@ -208,7 +226,7 @@ export function useBackendChatService(baseUrl: string) {
       handleFetchError(err);
       return;
     }
-    setActiveMessages(messages);
+    dispatch({ type: 'messagesReplaced', messages });
 
     const target = messages.find(m => m.id === messageId);
     if (!target) return;
@@ -220,11 +238,11 @@ export function useBackendChatService(baseUrl: string) {
       if (!res.ok) {
         if (handleFetchError(new HttpError(res.status))) return;
         // Backend no longer considers it failed (e.g. already retried elsewhere) - reconcile.
-        fetchMessages(baseUrl, chatId).then(setActiveMessages).catch(handleFetchError);
+        fetchMessages(baseUrl, chatId).then(messages => dispatch({ type: 'messagesReplaced', messages })).catch(handleFetchError);
         return;
       }
       const updated = mapMessage(await res.json());
-      setActiveMessages(prev => prev.map(m => m.id === messageId ? updated : m));
+      dispatch({ type: 'messageReplaced', messageId, message: updated });
       attemptStream(chatId, messageId, 0);
     } else if (target.status === 'pending') {
       attemptStream(chatId, messageId, 0);
@@ -241,31 +259,31 @@ export function useBackendChatService(baseUrl: string) {
 
   useEffect(() => {
     if (!sessionReady) return;
-    fetchChats(baseUrl).then(setChats).finally(() => setIsLoadingChats(false));
+    fetchChats(baseUrl)
+      .then(chats => dispatch({ type: 'chatsLoaded', chats }))
+      .finally(() => dispatch({ type: 'chatsLoadFinished' }));
   }, [sessionReady, baseUrl]);
 
   useEffect(() => {
     if (!sessionReady || activeChatId === null) {
-      setIsLoadingMessages(false);
+      dispatch({ type: 'messagesIdle' });
       return;
     }
     let cancelled = false;
-    setNotFoundReason(null);
-    setIsLoadingMessages(true);
+    dispatch({ type: 'messagesLoading' });
     fetchMessages(baseUrl, activeChatId).then(messages => {
       if (cancelled) return;
       const last = messages[messages.length - 1];
       if (last?.role === 'assistant' && last.status === 'pending') {
-        setActiveMessages(messages.map(m => m.id === last.id ? { ...m, content: '' } : m));
+        dispatch({ type: 'messagesLoadedStreaming', messages, streamingId: last.id });
         attemptStream(activeChatId, last.id, 0);
       } else {
-        setActiveMessages(messages);
+        dispatch({ type: 'messagesLoaded', messages });
       }
-      setIsLoadingMessages(false);
     }).catch(err => {
       if (cancelled) return;
       handleFetchError(err);
-      setIsLoadingMessages(false);
+      dispatch({ type: 'messagesIdle' });
     });
     return () => {
       cancelled = true;
@@ -273,16 +291,19 @@ export function useBackendChatService(baseUrl: string) {
     };
   }, [sessionReady, activeChatId, baseUrl, attemptStream, handleFetchError]);
 
-  async function sendMessage(content: string) {
+  const sendMessage = useCallback(async function sendMessage(content: string) {
     const isNewChat = activeChatId === null;
 
     if (isNewChat) {
-      setPendingNewChatMessage({
-        id: crypto.randomUUID(),
-        role: 'user',
-        content,
-        status: 'complete',
-        createdAt: Date.now(),
+      dispatch({
+        type: 'newChatPending',
+        message: {
+          id: crypto.randomUUID(),
+          role: 'user',
+          content,
+          status: 'complete',
+          createdAt: Date.now(),
+        },
       });
 
       try {
@@ -293,11 +314,10 @@ export function useBackendChatService(baseUrl: string) {
         });
         const chat = mapChat(await parseJson<Parameters<typeof mapChat>[0]>(res));
 
-        setChats(prev => [chat, ...prev]);
-        setPendingNewChatMessage(null);
+        dispatch({ type: 'newChatCreated', chat });
         router.push(`/chat/${chat.id}`);
       } catch (err) {
-        setPendingNewChatMessage(null);
+        dispatch({ type: 'newChatCleared' });
         handleFetchError(err);
       }
     } else {
@@ -310,7 +330,7 @@ export function useBackendChatService(baseUrl: string) {
         status: 'complete',
         createdAt: Date.now(),
       };
-      setActiveMessages(prev => [...prev, userMessage]);
+      dispatch({ type: 'userMessageAppended', message: userMessage });
 
       try {
         const res = await authorizedFetch(baseUrl, `/chats/${chatId}/messages`, {
@@ -320,13 +340,13 @@ export function useBackendChatService(baseUrl: string) {
         });
         const assistantMessage = mapMessage(await parseJson<Parameters<typeof mapMessage>[0]>(res));
 
-        setActiveMessages(prev => [...prev, assistantMessage]);
+        dispatch({ type: 'assistantMessageAppended', message: assistantMessage });
         attemptStream(chatId, assistantMessage.id, 0);
       } catch (err) {
         handleFetchError(err);
       }
     }
-  }
+  }, [activeChatId, baseUrl, router, attemptStream, handleFetchError]);
 
   const modifyMessage = useCallback(async function modifyMessage(chatId: string, messageId: string, content: string) {
     let res: Response;
@@ -344,16 +364,12 @@ export function useBackendChatService(baseUrl: string) {
     if (!res.ok) {
       if (handleFetchError(new HttpError(res.status))) return;
       // 409s (e.g. a reply is still streaming) or a stale message id - reconcile with the backend.
-      fetchMessages(baseUrl, chatId).then(setActiveMessages).catch(handleFetchError);
+      fetchMessages(baseUrl, chatId).then(messages => dispatch({ type: 'messagesReplaced', messages })).catch(handleFetchError);
       return;
     }
 
     const assistantMessage = mapMessage(await res.json());
-    setActiveMessages(prev => {
-      const idx = prev.findIndex(m => m.id === messageId);
-      if (idx === -1) return prev;
-      return [...prev.slice(0, idx), { ...prev[idx], content }, assistantMessage];
-    });
+    dispatch({ type: 'messageModified', messageId, content, assistantMessage });
     attemptStream(chatId, assistantMessage.id, 0);
   }, [baseUrl, attemptStream, handleFetchError]);
 
@@ -363,7 +379,7 @@ export function useBackendChatService(baseUrl: string) {
       handleFetchError(new HttpError(res.status));
       return;
     }
-    setChats(prev => prev.filter(c => c.id !== chatId));
+    dispatch({ type: 'chatDeleted', chatId });
     if (chatId === activeChatId) {
       router.push('/');
     }
@@ -372,24 +388,23 @@ export function useBackendChatService(baseUrl: string) {
   const logout = useCallback(async function logout() {
     streamAbortRef.current?.abort();
     await resetSession(baseUrl);
-    setActiveMessages([]);
-    setPendingNewChatMessage(null);
-    setChats(await fetchChats(baseUrl));
+    dispatch({ type: 'reset' });
+    dispatch({ type: 'chatsLoaded', chats: await fetchChats(baseUrl) });
     router.push('/');
   }, [baseUrl, router]);
 
   return {
-    chats,
+    chats: state.chats,
     activeChatId,
     activeMessages,
-    isLoadingChats,
-    isLoadingMessages,
+    isLoadingChats: state.isLoadingChats,
+    isLoadingMessages: state.isLoadingMessages,
     sendMessage,
     retryMessage,
     modifyMessage,
     deleteChat,
     logout,
-    notFoundReason,
+    notFoundReason: state.notFoundReason,
     goHome,
     dismissResourceNotFound,
   };
