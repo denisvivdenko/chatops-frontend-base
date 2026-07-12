@@ -27,6 +27,18 @@ export const initialChatState: ChatState = {
   notFoundReason: null,
 };
 
+/**
+ * The messages to render for the current route. On a real chat it's the message
+ * buffer; on the home route (no chat id yet) it's just the optimistic pending
+ * message, if any. Reading `activeChatId` here is what makes `activeMessages`
+ * stale-safe: the buffer can still hold a previous/just-deleted chat's messages
+ * and the home route simply won't show them.
+ */
+export function selectActiveMessages(state: ChatState, activeChatId: string | null): Message[] {
+  if (activeChatId !== null) return state.activeMessages;
+  return state.pendingNewChatMessage ? [state.pendingNewChatMessage] : [];
+}
+
 export type ChatAction =
   // chats
   | { type: 'chatsLoaded'; chats: Chat[] }
