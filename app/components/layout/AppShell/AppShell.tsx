@@ -1,7 +1,7 @@
 'use client';
 
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
-import { useChatStatus, useChatActions } from '../../../context/chatContext';
+import { useErrorValue, useNavigationValue } from '../../../context/chatContext';
 import DesktopLayout from '../DesktopLayout/DesktopLayout';
 import MobileLayout from '../MobileLayout/MobileLayout';
 import ChatPane from '../../chat/ChatPane/ChatPane';
@@ -9,8 +9,8 @@ import NotFoundNotice from '../../feedback/NotFoundNotice/NotFoundNotice';
 import styles from './AppShell.module.css';
 
 export default function AppShell() {
-  const { notFoundReason } = useChatStatus();
-  const { goHome, dismissResourceNotFound } = useChatActions();
+  const { message, dismissError } = useErrorValue();
+  const { goHome } = useNavigationValue();
   const isMobile = useMediaQuery('(max-width: 768px)');
 
   const Layout = isMobile ? MobileLayout : DesktopLayout;
@@ -20,11 +20,11 @@ export default function AppShell() {
       <Layout>
         <ChatPane />
       </Layout>
-      {notFoundReason && (
+      {message && (
         <NotFoundNotice
-          reason={notFoundReason}
+          message={message}
           onGoHomeAction={goHome}
-          onStayAction={dismissResourceNotFound}
+          onStayAction={dismissError}
         />
       )}
     </div>

@@ -4,22 +4,17 @@ import { SearchX } from 'lucide-react';
 import styles from './NotFoundNotice.module.css';
 
 type Props = {
-  reason: 'not-found' | 'forbidden';
+  message: string;
   onGoHomeAction(): void;
   onStayAction(): void;
 };
 
-const MESSAGES = {
-  'not-found': "This chat couldn't be found.",
-  forbidden: "This chat belongs to someone else, so you can't access it.",
-};
-
-export default function NotFoundNotice({ reason, onGoHomeAction, onStayAction }: Props) {
+export default function NotFoundNotice({ message, onGoHomeAction, onStayAction }: Props) {
   return (
     <div className={styles.wrapper} role="alert">
       <div className={styles.notice}>
         <SearchX size={20} strokeWidth={1.5} className={styles.icon} />
-        <p className={styles.message}>{MESSAGES[reason]}</p>
+        <p className={styles.message}>{message}</p>
         <div className={styles.actions}>
           <button className={styles.primaryButton} onClick={onGoHomeAction}>
             Go to home

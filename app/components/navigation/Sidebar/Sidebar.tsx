@@ -3,12 +3,12 @@
 import { useRef, useState } from 'react';
 import { PanelLeft, LogOut } from 'lucide-react';
 import ChatList from '../ChatList/ChatList';
-import { useChatActions } from '../../../context/chatContext';
+import { useSessionValue } from '../../../context/chatContext';
 import { useConfirmAction } from '../../../hooks/useConfirmAction';
 import styles from './Sidebar.module.css';
 
 export default function Sidebar() {
-  const { logout: onLogout } = useChatActions();
+  const { logout: onLogout } = useSessionValue();
   const [expanded, setExpanded] = useState(true);
   const logoutRef = useRef<HTMLButtonElement>(null);
   const logout = useConfirmAction(logoutRef, onLogout);

@@ -8,7 +8,7 @@ import { useChats, useChatActions } from '../../../context/chatContext';
 import styles from './ChatList.module.css';
 
 export default function ChatList({ onNavigateAction }: { onNavigateAction?(): void }) {
-  const { chats, activeChatId, isLoadingChats } = useChats();
+  const { chats, activeChatId, isLoading } = useChats();
   const { deleteChat } = useChatActions();
 
   return (
@@ -21,7 +21,7 @@ export default function ChatList({ onNavigateAction }: { onNavigateAction?(): vo
         <Plus className={styles.icon} size={20} strokeWidth={1.5} />
         <span className={styles.itemText}>New chat</span>
       </Link>
-      {isLoadingChats ? (
+      {isLoading ? (
         <div className={styles.loading}>
           <Spinner />
         </div>
