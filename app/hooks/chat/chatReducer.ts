@@ -1,13 +1,14 @@
-import type { Chat, Message } from '../types/chat';
+import type { Chat, Message } from '../../types/chat';
 
 /**
  * The whole chat domain in one place. Every transition below is expressed as an
  * action so `chatReducer` is the single source of truth for how state changes.
  *
  * Not in here on purpose:
- *  - `activeChatId` is URL state (derived from `useParams` in the hook), not app state.
- *  - `sessionReady` is bootstrap plumbing that only gates effects.
- *  - the pending-new-chat overlay is derived in the hook, since it depends on `activeChatId`.
+ *  - `activeChatId` is URL state (derived from `useParams` in the controller), not app state.
+ *  - `sessionReady` is bootstrap plumbing, owned by `useSession`.
+ *  - the not-found banner is a cross-cutting view concern, owned by `useResourceError`.
+ *  - the pending-new-chat overlay is derived in the controller, since it depends on `activeChatId`.
  */
 export type ChatState = {
   chats: Chat[];
@@ -15,7 +16,6 @@ export type ChatState = {
   pendingNewChatMessage: Message | null;
   isLoadingChats: boolean;
   isLoadingMessages: boolean;
-  notFoundReason: 'not-found' | 'forbidden' | null;
 };
 
 export const initialChatState: ChatState = {
@@ -24,7 +24,6 @@ export const initialChatState: ChatState = {
   pendingNewChatMessage: null,
   isLoadingChats: true,
   isLoadingMessages: false,
-  notFoundReason: null,
 };
 
 /**
@@ -60,9 +59,6 @@ export type ChatAction =
   | { type: 'messageMarkedFailed'; messageId: string }
   | { type: 'messageReplaced'; messageId: string; message: Message }
   | { type: 'messageModified'; messageId: string; content: string; assistantMessage: Message }
-  // resource-not-found banner
-  | { type: 'resourceNotFound'; reason: 'not-found' | 'forbidden' }
-  | { type: 'resourceNotFoundDismissed' }
   // logout
   | { type: 'reset' };
 
@@ -84,7 +80,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
       return { ...state, chats: state.chats.filter(c => c.id !== action.chatId) };
 
     case 'messagesLoading':
-      return { ...state, isLoadingMessages: true, notFoundReason: null };
+      return { ...state, isLoadingMessages: true };
     case 'messagesIdle':
       return { ...state, isLoadingMessages: false };
     case 'messagesLoaded':
@@ -138,11 +134,6 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         ],
       };
     }
-
-    case 'resourceNotFound':
-      return { ...state, notFoundReason: action.reason };
-    case 'resourceNotFoundDismissed':
-      return { ...state, notFoundReason: null };
 
     case 'reset':
       return { ...state, activeMessages: [], pendingNewChatMessage: null };

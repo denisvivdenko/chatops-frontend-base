@@ -1,4 +1,4 @@
-import type { Message } from '../types/chat';
+import type { Message } from '../../types/chat';
 import type { ChatApi } from './chatApi';
 
 const MAX_RECONNECT_ATTEMPTS = 3;

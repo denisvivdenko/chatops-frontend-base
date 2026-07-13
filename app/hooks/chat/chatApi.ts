@@ -1,5 +1,5 @@
-import type { Chat, Message } from '../types/chat';
-import { ensureSession, authorizedFetch, resetSession } from './authSession';
+import type { Chat, Message } from '../../types/chat';
+import { authorizedFetch } from '../authSession';
 
 /**
  * Transport layer for the chat backend. Every function returns domain objects
@@ -113,9 +113,6 @@ export type ChatApi = ReturnType<typeof createChatApi>;
 
 export function createChatApi(baseUrl: string) {
   return {
-    ensureSession: () => ensureSession(baseUrl),
-    resetSession: () => resetSession(baseUrl),
-
     async fetchChats(): Promise<Chat[]> {
       const res = await authorizedFetch(baseUrl, '/chats?limit=50');
       const data = await parseJson<RawChat[]>(res);
