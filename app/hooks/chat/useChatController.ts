@@ -51,8 +51,7 @@ export function useChatController(baseUrl: string) {
 
     if (target.status === 'failed') {
       let updated: Message;
-      try {
-        updated = await api.retryMessage(chatId, messageId);
+      try { updated = await api.retryMessage(chatId, messageId);
       } catch (err) {
         if (report(err)) return;
         // Backend no longer considers it failed (e.g. already retried elsewhere) - reconcile.
