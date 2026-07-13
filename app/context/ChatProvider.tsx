@@ -1,74 +1,64 @@
 'use client';
 
-import { useMemo } from 'react';
-import { useBackendChatService } from '../hooks/useBackendChatService';
+import { useReducer, useMemo } from 'react';
+import { appStateReducer, initialAppState } from '../hooks/chat/appState';
+import { useChatController } from '../hooks/chat/useChatController';
+import { useSession } from '../hooks/useSession';
+import { useError } from '../hooks/chat/useError';
+import { useNavigation } from '../hooks/useNavigation';
 import {
+  SessionContext,
+  NavigationContext,
+  ErrorContext,
+  ChatActionsContext,
   ChatsContext,
   MessagesContext,
-  StatusContext,
-  ChatActionsContext,
+  type SessionValue,
+  type NavigationValue,
+  type ErrorValue,
+  type ChatsValue,
+  type MessagesValue,
+  type ChatActionsValue,
 } from './chatContext';
 
-export default function ChatProvider({
-  backendUrl,
-  children,
-}: {
-  backendUrl: string;
-  children: React.ReactNode;
-}) {
-  const {
-    chats,
-    activeChatId,
-    activeMessages,
-    isLoadingChats,
-    isLoadingMessages,
-    notFoundReason,
-    sendMessage,
-    retryMessage: retryAction,
-    modifyMessage: modifyAction,
-    deleteChat,
-    logout,
-    goHome,
-    dismissResourceNotFound,
-  } = useBackendChatService(backendUrl);
+export default function ChatProvider({ backendUrl, children }: { backendUrl: string; children: React.ReactNode }) {
+  const [state, dispatch] = useReducer(appStateReducer, initialAppState);
 
-  const chatsValue = useMemo(
-    () => ({ chats, activeChatId, isLoadingChats }),
-    [chats, activeChatId, isLoadingChats],
+  const { goHome } = useNavigation();
+  const { dismissError } = useError(dispatch);
+  const { logout } = useSession(dispatch, backendUrl);
+  const { deleteChat, sendMessage, modifyMessage, retryMessage } = useChatController(state.session.id, dispatch, backendUrl);
+
+  const navigation: NavigationValue = useMemo(() => ({ goHome }), [goHome]);
+  const session: SessionValue = useMemo(() => ({ logout }), [logout]);
+  const error: ErrorValue = useMemo(
+    () => ({ message: state.error.message, type: state.error.type, dismissError }),
+    [state.error, dismissError],
   );
-
-  const messagesValue = useMemo(
-    () => ({ activeMessages, isLoadingMessages }),
-    [activeMessages, isLoadingMessages],
+  const chatActions: ChatActionsValue = useMemo(
+    () => ({ deleteChat, sendMessage, retryMessage, modifyMessage }),
+    [deleteChat, sendMessage, retryMessage, modifyMessage],
   );
-
-  const statusValue = useMemo(() => ({ notFoundReason }), [notFoundReason]);
-
-  // retry/modify are bound to the active chat here so consumers (Message) need
-  // only `useChatActions()` and stay out of ChatsContext. activeChatId is stable
-  // during streaming, so these — and therefore the whole actions value — keep a
-  // stable identity across tokens.
-  const retryMessage = useMemo(
-    () => (activeChatId ? (messageId: string) => retryAction(activeChatId, messageId) : null),
-    [activeChatId, retryAction],
+  const chats: ChatsValue = useMemo(
+    () => ({ chats: state.chat.fetchedChats, activeChatId: state.chat.activeChatId, isLoading: state.chat.isLoading }),
+    [state.chat],
   );
-  const modifyMessage = useMemo(
-    () => (activeChatId ? (messageId: string, content: string) => modifyAction(activeChatId, messageId, content) : null),
-    [activeChatId, modifyAction],
-  );
-
-  const actionsValue = useMemo(
-    () => ({ sendMessage, deleteChat, logout, goHome, dismissResourceNotFound, retryMessage, modifyMessage }),
-    [sendMessage, deleteChat, logout, goHome, dismissResourceNotFound, retryMessage, modifyMessage],
+  const messages: MessagesValue = useMemo(
+    () => ({ messages: state.messages.fetchedMessages, isLoading: state.messages.isLoading }),
+    [state.messages],
   );
 
   return (
-    <ChatActionsContext value={actionsValue}>
-      <StatusContext value={statusValue}>
-        <ChatsContext value={chatsValue}>
-          <MessagesContext value={messagesValue}>{children}</MessagesContext>
-        </ChatsContext>
-      </StatusContext>
-    </ChatActionsContext>
+    <SessionContext value={session}>
+      <NavigationContext value={navigation}>
+        <ErrorContext value={error}>
+          <ChatActionsContext value={chatActions}>
+            <ChatsContext value={chats}>
+              <MessagesContext value={messages}>{children}</MessagesContext>
+            </ChatsContext>
+          </ChatActionsContext>
+        </ErrorContext>
+      </NavigationContext>
+    </SessionContext>
   );
 }

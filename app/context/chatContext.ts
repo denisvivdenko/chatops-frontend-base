@@ -2,44 +2,53 @@
 
 import { createContext, use } from 'react';
 import type { Chat, Message } from '../types/chat';
+import type { ErrorType } from '../hooks/chat/appState';
 
 /**
- * State is split by domain so a change to one slice only re-renders that slice's
- * consumers. In particular `MessagesContext` is the only thing that changes while
- * a reply streams token-by-token — the sidebar (ChatsContext) and every action
- * trigger (ChatActionsContext) sit the stream out.
+ * State and actions are split by domain so a change to one slice only re-renders
+ * that slice's consumers. In particular `MessagesContext` is the only thing that
+ * changes while a reply streams token-by-token — the sidebar (`ChatsContext`) and
+ * every action trigger (`ChatActionsContext`) sit the stream out.
  */
+
+export type SessionValue = {
+  logout: () => void;
+};
+
+export type NavigationValue = {
+  goHome: () => void;
+};
+
+export type ErrorValue = {
+  message: string | null;
+  type: ErrorType | null;
+  dismissError: () => void;
+};
 
 export type ChatsValue = {
   chats: Chat[];
   activeChatId: string | null;
-  isLoadingChats: boolean;
+  isLoading: boolean;
 };
 
 export type MessagesValue = {
-  activeMessages: Message[];
-  isLoadingMessages: boolean;
-};
-
-export type StatusValue = {
-  notFoundReason: 'not-found' | 'forbidden' | null;
+  messages: Message[];
+  isLoading: boolean;
 };
 
 export type ChatActionsValue = {
   sendMessage: (content: string) => void;
   deleteChat: (chatId: string) => void;
-  logout: () => void;
-  goHome: () => void;
-  dismissResourceNotFound: () => void;
-  // Route-bound to the active chat; null on the home route (no chat to act on),
-  // which mirrors the old `activeChatId ? … : undefined` gating in AppLayout.
+  // Route-bound to the active chat; null on the home route (no chat to act on).
   retryMessage: ((messageId: string) => void) | null;
   modifyMessage: ((messageId: string, content: string) => void) | null;
 };
 
+export const SessionContext = createContext<SessionValue | null>(null);
+export const NavigationContext = createContext<NavigationValue | null>(null);
+export const ErrorContext = createContext<ErrorValue | null>(null);
 export const ChatsContext = createContext<ChatsValue | null>(null);
 export const MessagesContext = createContext<MessagesValue | null>(null);
-export const StatusContext = createContext<StatusValue | null>(null);
 export const ChatActionsContext = createContext<ChatActionsValue | null>(null);
 
 function useRequired<T>(context: React.Context<T | null>, name: string): T {
@@ -48,7 +57,9 @@ function useRequired<T>(context: React.Context<T | null>, name: string): T {
   return value;
 }
 
+export const useSessionValue = () => useRequired(SessionContext, 'useSessionValue');
+export const useNavigationValue = () => useRequired(NavigationContext, 'useNavigationValue');
+export const useErrorValue = () => useRequired(ErrorContext, 'useErrorValue');
 export const useChats = () => useRequired(ChatsContext, 'useChats');
 export const useMessages = () => useRequired(MessagesContext, 'useMessages');
-export const useChatStatus = () => useRequired(StatusContext, 'useChatStatus');
 export const useChatActions = () => useRequired(ChatActionsContext, 'useChatActions');

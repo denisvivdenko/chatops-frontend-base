@@ -1,59 +1,58 @@
 'use client';
 
-import { useReducer, useState, useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import type { Message } from '../types/chat';
-import { chatReducer, initialChatState, selectActiveMessages } from './chatReducer';
+import type { Dispatch } from 'react';
+import type { Message } from '../../types/chat';
+import type { AppAction } from './appState';
 import { createChatApi, HttpError } from './chatApi';
 import { createChatStream } from './chatStream';
 
-export function useBackendChatService(baseUrl: string) {
+/**
+ * Orchestrates the chat domain: it owns the load effects and the streaming machine,
+ * reads `activeChatId` from the URL, and turns network results into `dispatch`es
+ * against the shared store. It holds no state of its own — state lives in the store,
+ * identity comes in as `sessionId`. Returns the chat actions (retry/modify already
+ * bound to the active chat, null on the home route).
+ */
+export function useChatController(sessionId: string | null, dispatch: Dispatch<AppAction>, baseUrl: string) {
   const router = useRouter();
   const { chatId } = useParams<{ chatId?: string }>();
   const activeChatId = chatId ?? null;
 
   const api = useMemo(() => createChatApi(baseUrl), [baseUrl]);
 
-  const [sessionReady, setSessionReady] = useState(false);
-  const [state, dispatch] = useReducer(chatReducer, initialChatState);
+  // The controller is the sole writer of activeChatId: it mirrors the URL into the
+  // store so components read it from context instead of reaching for `useParams`.
+  useEffect(() => {
+    dispatch({ type: 'activeChatChanged', activeChatId });
+  }, [activeChatId, dispatch]);
 
-  const activeMessages = selectActiveMessages(state, activeChatId);
-
-  const handleFetchError = useCallback((err: unknown): boolean => {
+  const reportError = useCallback((err: unknown): boolean => {
     if (err instanceof HttpError && err.status === 404) {
-      dispatch({ type: 'resourceNotFound', reason: 'not-found' });
+      dispatch({ type: 'errorRaised', reason: 'not-found' });
       return true;
     }
     if (err instanceof HttpError && err.status === 403) {
-      dispatch({ type: 'resourceNotFound', reason: 'forbidden' });
+      dispatch({ type: 'errorRaised', reason: 'forbidden' });
       return true;
     }
     return false;
-  }, []);
-
-  const goHome = useCallback(() => {
-    dispatch({ type: 'resourceNotFoundDismissed' });
-    api.fetchChats().then(chats => dispatch({ type: 'chatsLoaded', chats }));
-    router.push('/');
-  }, [api, router]);
-
-  const dismissResourceNotFound = useCallback(() => {
-    dispatch({ type: 'resourceNotFoundDismissed' });
-  }, []);
+  }, [dispatch]);
 
   const stream = useMemo(() => createChatStream(api, {
     onToken: (messageId, token) => dispatch({ type: 'tokenReceived', messageId, token }),
     onMessages: (messages) => dispatch({ type: 'messagesReplaced', messages }),
     onChatsStale: () => { api.fetchChats().then(chats => dispatch({ type: 'chatsLoaded', chats })); },
-    onError: handleFetchError,
-  }), [api, handleFetchError]);
+    onError: reportError,
+  }), [api, reportError, dispatch]);
 
-  const retryMessage = useCallback(async function retryMessage(chatId: string, messageId: string) {
+  const retryAction = useCallback(async function retryAction(chatId: string, messageId: string) {
     let messages: Message[];
     try {
       messages = await api.fetchMessages(chatId);
     } catch (err) {
-      handleFetchError(err);
+      reportError(err);
       return;
     }
     dispatch({ type: 'messagesReplaced', messages });
@@ -66,9 +65,9 @@ export function useBackendChatService(baseUrl: string) {
       try {
         updated = await api.retryMessage(chatId, messageId);
       } catch (err) {
-        if (handleFetchError(err)) return;
+        if (reportError(err)) return;
         // Backend no longer considers it failed (e.g. already retried elsewhere) - reconcile.
-        api.fetchMessages(chatId).then(messages => dispatch({ type: 'messagesReplaced', messages })).catch(handleFetchError);
+        api.fetchMessages(chatId).then(messages => dispatch({ type: 'messagesReplaced', messages })).catch(reportError);
         return;
       }
       dispatch({ type: 'messageReplaced', messageId, message: updated });
@@ -76,26 +75,24 @@ export function useBackendChatService(baseUrl: string) {
     } else if (target.status === 'pending') {
       stream.start(chatId, messageId);
     }
-  }, [api, stream, handleFetchError]);
+  }, [api, stream, reportError, dispatch]);
 
+  // Chat list: (re)loads whenever the session identity changes — including logout,
+  // which mints a new id.
   useEffect(() => {
-    let cancelled = false;
-    api.ensureSession().then(() => {
-      if (!cancelled) setSessionReady(true);
-    });
-    return () => { cancelled = true; };
-  }, [api]);
-
-  useEffect(() => {
-    if (!sessionReady) return;
+    if (sessionId === null) return;
     api.fetchChats()
       .then(chats => dispatch({ type: 'chatsLoaded', chats }))
       .finally(() => dispatch({ type: 'chatsLoadFinished' }));
-  }, [sessionReady, api]);
+  }, [sessionId, api, dispatch]);
 
+  // Active-chat messages: loads on route change (and once the session is ready).
   useEffect(() => {
-    if (!sessionReady || activeChatId === null) {
-      dispatch({ type: 'messagesIdle' });
+    if (sessionId === null || activeChatId === null) {
+      // No active chat: clear the buffer so a previous/just-deleted chat's messages
+      // don't linger. The optimistic new-chat message (set on send) survives because
+      // this effect doesn't re-run until the route actually changes.
+      dispatch({ type: 'messagesCleared' });
       return;
     }
     let cancelled = false;
@@ -111,14 +108,14 @@ export function useBackendChatService(baseUrl: string) {
       }
     }).catch(err => {
       if (cancelled) return;
-      handleFetchError(err);
+      reportError(err);
       dispatch({ type: 'messagesIdle' });
     });
     return () => {
       cancelled = true;
       stream.abort();
     };
-  }, [sessionReady, activeChatId, api, stream, handleFetchError]);
+  }, [sessionId, activeChatId, api, stream, reportError, dispatch]);
 
   const sendMessage = useCallback(async function sendMessage(content: string) {
     const isNewChat = activeChatId === null;
@@ -137,11 +134,11 @@ export function useBackendChatService(baseUrl: string) {
 
       try {
         const chat = await api.createChat(content);
-        dispatch({ type: 'newChatCreated', chat });
+        dispatch({ type: 'chatCreated', chat });
         router.push(`/chat/${chat.id}`);
       } catch (err) {
         dispatch({ type: 'newChatCleared' });
-        handleFetchError(err);
+        reportError(err);
       }
     } else {
       const chatId = activeChatId;
@@ -160,60 +157,50 @@ export function useBackendChatService(baseUrl: string) {
         dispatch({ type: 'assistantMessageAppended', message: assistantMessage });
         stream.start(chatId, assistantMessage.id);
       } catch (err) {
-        handleFetchError(err);
+        reportError(err);
       }
     }
-  }, [activeChatId, api, router, stream, handleFetchError]);
+  }, [activeChatId, api, router, stream, reportError, dispatch]);
 
-  const modifyMessage = useCallback(async function modifyMessage(chatId: string, messageId: string, content: string) {
+  const modifyAction = useCallback(async function modifyAction(chatId: string, messageId: string, content: string) {
     let assistantMessage: Message;
     try {
       assistantMessage = await api.modifyMessage(chatId, messageId, content);
     } catch (err) {
-      if (handleFetchError(err)) return;
+      if (reportError(err)) return;
       // 409s (e.g. a reply is still streaming) or a stale message id - reconcile with the backend.
-      api.fetchMessages(chatId).then(messages => dispatch({ type: 'messagesReplaced', messages })).catch(handleFetchError);
+      api.fetchMessages(chatId).then(messages => dispatch({ type: 'messagesReplaced', messages })).catch(reportError);
       return;
     }
 
     dispatch({ type: 'messageModified', messageId, content, assistantMessage });
     stream.start(chatId, assistantMessage.id);
-  }, [api, stream, handleFetchError]);
+  }, [api, stream, reportError, dispatch]);
 
   const deleteChat = useCallback(async function deleteChat(chatId: string) {
     try {
       await api.deleteChat(chatId);
     } catch (err) {
-      handleFetchError(err);
+      reportError(err);
       return;
     }
     dispatch({ type: 'chatDeleted', chatId });
     if (chatId === activeChatId) {
       router.push('/');
     }
-  }, [api, activeChatId, router, handleFetchError]);
+  }, [api, activeChatId, router, reportError, dispatch]);
 
-  const logout = useCallback(async function logout() {
-    stream.abort();
-    await api.resetSession();
-    dispatch({ type: 'reset' });
-    dispatch({ type: 'chatsLoaded', chats: await api.fetchChats() });
-    router.push('/');
-  }, [api, stream, router]);
+  // retry/modify are bound to the active chat here so consumers (Message) call them
+  // with just a messageId and never need the URL. activeChatId is stable during
+  // streaming, so these keep a stable identity across tokens. null on the home route.
+  const retryMessage = useMemo(
+    () => (activeChatId ? (messageId: string) => retryAction(activeChatId, messageId) : null),
+    [activeChatId, retryAction],
+  );
+  const modifyMessage = useMemo(
+    () => (activeChatId ? (messageId: string, content: string) => modifyAction(activeChatId, messageId, content) : null),
+    [activeChatId, modifyAction],
+  );
 
-  return {
-    chats: state.chats,
-    activeChatId,
-    activeMessages,
-    isLoadingChats: state.isLoadingChats,
-    isLoadingMessages: state.isLoadingMessages,
-    sendMessage,
-    retryMessage,
-    modifyMessage,
-    deleteChat,
-    logout,
-    notFoundReason: state.notFoundReason,
-    goHome,
-    dismissResourceNotFound,
-  };
+  return { sendMessage, deleteChat, retryMessage, modifyMessage };
 }
