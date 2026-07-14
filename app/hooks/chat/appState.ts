@@ -19,6 +19,7 @@ export const initialSessionState: SessionState = { id: null };
 
 // ── error (resource-not-found banner) ────────────────────────────────────────
 export type ErrorType = 'not-found' | 'forbidden';
+export type ErrorDismissedReason = 'url-changed' | 'user-input';
 export type ErrorState = { type: ErrorType | null; message: string | null };
 export const initialErrorState: ErrorState = { type: null, message: null };
 
@@ -67,7 +68,7 @@ export type AppAction =
   | { type: 'sessionReset'; id: string }    // logout: new identity, wipe all data (root reducer)
   // error
   | { type: 'errorRaised'; reason: ErrorType }
-  | { type: 'errorDismissed' }
+  | { type: 'errorDismissed'; reason: ErrorDismissedReason }
   // chat list
   | { type: 'activeChatChanged'; activeChatId: string | null }
   | { type: 'chatsLoaded'; chats: Chat[] }
@@ -196,7 +197,10 @@ function messagesReducer(state: MessagesState, action: AppAction): MessagesState
   }
 }
 
+let actionCount = 0;
+
 export function appStateReducer(state: AppState, action: AppAction): AppState {
+  console.log(`[chat-state] #${++actionCount}`, action.type, action);
   if (action.type === 'sessionReset') {
     // Logout: a new identity, so wipe every domain slice. `chat.isLoading` returns
     // to `true` so the sidebar spins until the session-keyed load effect refetches.
