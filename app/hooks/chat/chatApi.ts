@@ -53,18 +53,23 @@ function mapChat(raw: RawChat): Chat {
   };
 }
 
+export type StreamOutcome = { status: 'complete' } | { status: 'failed'; reason?: string };
+
 /**
- * Reads an SSE body (fetch doesn't give us EventSource's framing for free) and emits tokens.
- * Tokens are coalesced and flushed at most once per animation frame, so a fast stream drives
- * ~60 re-renders/sec of the reply instead of one per token — the difference is invisible to
- * the reader but keeps the render loop cheap. The post-stream reconcile refetches the
- * authoritative content, so any dropped intra-frame granularity is inconsequential.
+ * Reads an SSE body (fetch doesn't give us EventSource's framing for free) and emits tokens,
+ * resolving with the terminal `done` event's payload once the backend sends one (or `null` if
+ * the stream ended without one — a dropped connection, say). Tokens are coalesced and flushed
+ * at most once per animation frame, so a fast stream drives ~60 re-renders/sec of the reply
+ * instead of one per token — the difference is invisible to the reader but keeps the render
+ * loop cheap. Buffered tokens are flushed before the `done` event is recorded, so the caller
+ * never sees a "complete" outcome paired with incomplete content.
  */
-async function readTokenStream(response: Response, onToken: (chunk: string) => void): Promise<void> {
-  if (!response.body) return;
+async function readTokenStream(response: Response, onToken: (chunk: string) => void): Promise<StreamOutcome | null> {
+  if (!response.body) return null;
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
+  let outcome: StreamOutcome | null = null;
 
   let pending = '';
   let frame = 0;
@@ -83,20 +88,27 @@ async function readTokenStream(response: Response, onToken: (chunk: string) => v
   try {
     for (;;) {
       const { value, done } = await reader.read();
-      if (done) return;
+      if (done) return outcome;
       buffer += decoder.decode(value, { stream: true });
 
       let boundary: number;
       while ((boundary = buffer.indexOf('\n\n')) !== -1) {
         const rawEvent = buffer.slice(0, boundary);
         buffer = buffer.slice(boundary + 2);
+        const lines = rawEvent.split('\n');
 
-        const data = rawEvent
-          .split('\n')
+        const eventType = lines.find(line => line.startsWith('event:'))?.slice(6).trim();
+        const data = lines
           .filter(line => line.startsWith('data:'))
           .map(line => line.slice(5).trim())
           .join('\n');
         if (!data) continue;
+
+        if (eventType === 'done') {
+          flush();
+          outcome = JSON.parse(data) as StreamOutcome;
+          continue;
+        }
 
         const { token } = JSON.parse(data) as { seq_id: number; token: string };
         pending += token;

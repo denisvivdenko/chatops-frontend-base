@@ -1,12 +1,15 @@
 import type { Message } from '../../types/chat';
-import type { ChatApi } from './chatApi';
+import type { ChatApi, StreamOutcome } from './chatApi';
 
 const MAX_RECONNECT_ATTEMPTS = 3;
 const RECONNECT_DELAY_MS = 500;
 
 /**
  * Owns the lifecycle of streaming one assistant reply: open the SSE stream, emit
- * tokens, and once the connection closes, reconcile against the backend-persisted
+ * tokens, and react to how it ends. The backend's terminal `done` event is
+ * authoritative — it's applied directly with no extra round trip. Only when the
+ * connection closes *without* one (drop, timeout, old backend) is the outcome
+ * genuinely ambiguous, and only then do we reconcile against the backend-persisted
  * status (retrying with backoff while it's still pending, giving up as "failed"
  * after a few tries). It holds the AbortController and attempt counter itself and
  * speaks only in callbacks — it never touches the reducer, so the reconnect policy
@@ -15,7 +18,9 @@ const RECONNECT_DELAY_MS = 500;
 export type ChatStreamCallbacks = {
   /** A token arrived for the streaming message. */
   onToken: (messageId: string, token: string) => void;
-  /** The authoritative message list to display after a reconcile. */
+  /** The backend's own terminal event arrived — apply it directly, no refetch needed. */
+  onMessageDone: (messageId: string, status: 'complete' | 'failed') => void;
+  /** No terminal event arrived; this is the reconciled, authoritative message list. */
   onMessages: (messages: Message[]) => void;
   /** The chat list (sidebar) may be out of date and should be refreshed. */
   onChatsStale: () => void;
@@ -64,24 +69,30 @@ export function createChatStream(api: ChatApi, cb: ChatStreamCallbacks) {
       cb.onChatsStale();
     }
 
-    // The server closes the connection both on normal completion and on
-    // failure/timeout, and a dropped connection looks the same either way.
-    // Rather than guess which happened, always refetch messages and let the
-    // backend-persisted status decide what happens next.
     async function run() {
+      let outcome: StreamOutcome | null = null;
       try {
         const response = await api.openStream(chatId, messageId, abort.signal);
         if (abort.signal.aborted) return;
 
-        await api.readTokenStream(response, (token) => {
-          if (abort.signal.aborted) return;
-          cb.onToken(messageId, token);
+        outcome = await api.readTokenStream(response, (token) => {
+          if (!abort.signal.aborted) cb.onToken(messageId, token);
         });
       } catch {
         if (abort.signal.aborted) return;
       }
 
       if (abort.signal.aborted) return;
+
+      if (outcome) {
+        // The backend told us directly how this ended — trust it, no refetch needed.
+        cb.onMessageDone(messageId, outcome.status);
+        cb.onChatsStale();
+        return;
+      }
+
+      // No terminal event reached us (dropped connection, timeout, old backend) —
+      // genuinely ambiguous, so fall back to reconciling against the backend.
       await reconcile();
     }
 

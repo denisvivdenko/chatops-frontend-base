@@ -16,10 +16,13 @@ export function useError(dispatch: Dispatch<AppAction>) {
   const pathname = usePathname();
 
   useEffect(() => {
-    dispatch({ type: 'errorDismissed' });
+    dispatch({ type: 'errorDismissed', reason: 'url-changed' });
   }, [pathname, dispatch]);
 
-  const dismissError = useCallback(() => dispatch({ type: 'errorDismissed' }), [dispatch]);
+  const dismissError = useCallback(
+    () => dispatch({ type: 'errorDismissed', reason: 'user-input' }),
+    [dispatch]
+  );
 
   return { dismissError };
 }
