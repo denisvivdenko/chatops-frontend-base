@@ -42,6 +42,7 @@ export function useChatController(sessionId: string | null, dispatch: Dispatch<A
 
   const stream = useMemo(() => createChatStream(api, {
     onToken: (messageId, token) => dispatch({ type: 'tokenReceived', messageId, token }),
+    onMessageDone: (messageId, status) => dispatch({ type: 'messageStatusSet', messageId, status }),
     onMessages: (messages) => dispatch({ type: 'messagesReplaced', messages }),
     onChatsStale: () => { api.fetchChats().then(chats => dispatch({ type: 'chatsLoaded', chats })); },
     onError: reportError,

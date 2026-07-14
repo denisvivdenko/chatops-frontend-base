@@ -89,6 +89,7 @@ export type AppAction =
   | { type: 'userMessageAppended'; message: Message }
   | { type: 'assistantMessageAppended'; message: Message }
   | { type: 'tokenReceived'; messageId: string; token: string }
+  | { type: 'messageStatusSet'; messageId: string; status: 'complete' | 'failed' }
   | { type: 'messageReplaced'; messageId: string; message: Message }
   | { type: 'messageModified'; messageId: string; content: string; assistantMessage: Message };
 
@@ -171,6 +172,13 @@ function messagesReducer(state: MessagesState, action: AppAction): MessagesState
           m.id === action.messageId
             ? { ...m, content: m.content ? m.content + action.token : action.token }
             : m
+        ),
+      };
+    case 'messageStatusSet':
+      return {
+        ...state,
+        fetchedMessages: state.fetchedMessages.map(m =>
+          m.id === action.messageId ? { ...m, status: action.status } : m
         ),
       };
     case 'messageReplaced':

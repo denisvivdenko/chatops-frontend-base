@@ -16,7 +16,7 @@ export function useError(dispatch: Dispatch<AppAction>) {
   const pathname = usePathname();
 
   useEffect(() => {
-    dispatch({ type: 'errorDismissed', reason: 'url-change' });
+    dispatch({ type: 'errorDismissed', reason: 'url-changed' });
   }, [pathname, dispatch]);
 
   const dismissError = useCallback(
