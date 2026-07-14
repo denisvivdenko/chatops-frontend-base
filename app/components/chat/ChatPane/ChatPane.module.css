@@ -15,8 +15,9 @@
      so messages underneath remain interactive — see `.inputBar > *`. */
   pointer-events: none;
   /* Never actually scrolls (content is pinned to the bottom via flex) — this only exists
-     so scrollbar-gutter reserves the same fixed width as .messageArea, keeping both panels
-     centered identically whether or not the message list's scrollbar is currently showing. */
+     so scrollbar-gutter reserves the same fixed width as the message list's own scroller
+     (MessageList.module.css's .scroller), keeping both panels centered identically whether
+     or not the message list's scrollbar is currently showing. */
   overflow-y: auto;
   scrollbar-gutter: stable;
   /* Messages scrolling underneath fade out over the input's own footprint (~5rem) and are
@@ -33,8 +34,6 @@
 .messageArea {
   position: absolute;
   inset: 0;
-  overflow-y: auto;
-  scrollbar-gutter: stable;
 }
 
 .loading {

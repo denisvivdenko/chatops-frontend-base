@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useCallback, useMemo, startTransition } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import type { Dispatch } from 'react';
 import type { Message } from '../../types/chat';
@@ -102,10 +102,17 @@ export function useChatController(sessionId: string | null, dispatch: Dispatch<A
       if (cancelled) return;
       const last = messages[messages.length - 1];
       if (last?.role === 'assistant' && last.status === 'pending') {
-        dispatch({ type: 'messagesLoadedStreaming', messages, streamingId: last.id });
+        // A big history is expensive to render (markdown parsing per message, no
+        // virtualization) - as a transition, React can chunk that render and yield to
+        // more urgent work (typing, clicks) instead of blocking the main thread on it.
+        startTransition(() => {
+          dispatch({ type: 'messagesLoadedStreaming', messages, streamingId: last.id });
+        });
         stream.start(activeChatId, last.id);
       } else {
-        dispatch({ type: 'messagesLoaded', messages });
+        startTransition(() => {
+          dispatch({ type: 'messagesLoaded', messages });
+        });
       }
     }).catch(err => {
       if (cancelled) return;
