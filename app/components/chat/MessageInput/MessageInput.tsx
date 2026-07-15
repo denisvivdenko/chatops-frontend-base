@@ -188,7 +188,7 @@ function MessageInput({ onSendAction, disableSend, initialValue = '', onCancelAc
           {isAddMenuOpen && (
             <div className={styles.addMenuList} role="menu">
               <button type="button" className={styles.addMenuItem} role="menuitem" onClick={handleImageButtonClick}>
-                <ImageIcon size={14} strokeWidth={1.5} />
+                <ImageIcon size={16} strokeWidth={1.5} />
                 Image
               </button>
             </div>
