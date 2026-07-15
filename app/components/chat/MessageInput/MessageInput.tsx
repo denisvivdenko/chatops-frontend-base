@@ -1,7 +1,8 @@
 'use client';
 
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowUp, Image as ImageIcon, Plus, X } from 'lucide-react';
+import { ArrowUp, FileText, Image as ImageIcon, Plus, X } from 'lucide-react';
+import DocumentsModal from '../DocumentsModal/DocumentsModal';
 import styles from './MessageInput.module.css';
 
 const MAX_IMAGE_BYTES = 3 * 1024 * 1024;
@@ -54,6 +55,7 @@ function MessageInput({ onSendAction, disableSend, initialValue = '', onCancelAc
   const [attachments, setAttachments] = useState<Attachment[]>(initialSplit.attachments);
   const [pasteError, setPasteError] = useState<string | null>(null);
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+  const [isDocumentsModalOpen, setIsDocumentsModalOpen] = useState(false);
   const imageCounterRef = useRef(initialSplit.attachments.length);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const addMenuRef = useRef<HTMLDivElement>(null);
@@ -161,6 +163,11 @@ function MessageInput({ onSendAction, disableSend, initialValue = '', onCancelAc
     imageInputRef.current?.click();
   };
 
+  const handleDocumentButtonClick = () => {
+    setIsAddMenuOpen(false);
+    setIsDocumentsModalOpen(true);
+  };
+
   const handleImageInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const imageFiles = Array.from(e.target.files ?? []);
     e.target.value = '';
@@ -190,6 +197,10 @@ function MessageInput({ onSendAction, disableSend, initialValue = '', onCancelAc
               <button type="button" className={styles.addMenuItem} role="menuitem" onClick={handleImageButtonClick}>
                 <ImageIcon size={16} strokeWidth={1.5} />
                 Image
+              </button>
+              <button type="button" className={styles.addMenuItem} role="menuitem" onClick={handleDocumentButtonClick}>
+                <FileText size={16} strokeWidth={1.5} />
+                Document
               </button>
             </div>
           )}
@@ -247,6 +258,7 @@ function MessageInput({ onSendAction, disableSend, initialValue = '', onCancelAc
         </div>
       )}
       {pasteError && <div className={styles.pasteError}>{pasteError}</div>}
+      {isDocumentsModalOpen && <DocumentsModal onCloseAction={() => setIsDocumentsModalOpen(false)} />}
     </div>
   );
 }

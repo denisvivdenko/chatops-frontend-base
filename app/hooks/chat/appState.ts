@@ -48,11 +48,28 @@ export const initialMessagesState: MessagesState = {
   isLoading: false,
 };
 
+// ── resources (document library) ────────────────────────────────────────────
+// `id` is the stable client-side list identity: a fresh uuid for an in-progress
+// upload, or the backend resourceId for a library item (which has no upload phase).
+// It never changes across an upload's lifecycle - `resourceId` is filled in
+// separately on success - so selection state elsewhere can key off `id` alone.
+export type ResourceStatus = 'uploading' | 'ready' | 'failed';
+export type ResourceItem = {
+  id: string;
+  resourceId: string | null;
+  filename: string;
+  status: ResourceStatus;
+  error?: string;
+};
+export type ResourcesState = { items: ResourceItem[]; isLoaded: boolean };
+export const initialResourcesState: ResourcesState = { items: [], isLoaded: false };
+
 export type AppState = {
   session: SessionState;
   error: ErrorState;
   chat: ChatState;
   messages: MessagesState;
+  resources: ResourcesState;
 };
 
 export const initialAppState: AppState = {
@@ -60,6 +77,7 @@ export const initialAppState: AppState = {
   error: initialErrorState,
   chat: initialChatState,
   messages: initialMessagesState,
+  resources: initialResourcesState,
 };
 
 export type AppAction =
@@ -91,7 +109,14 @@ export type AppAction =
   | { type: 'tokenReceived'; messageId: string; token: string }
   | { type: 'messageStatusSet'; messageId: string; status: 'complete' | 'failed' }
   | { type: 'messageReplaced'; messageId: string; message: Message }
-  | { type: 'messageModified'; messageId: string; content: string; assistantMessage: Message };
+  | { type: 'messageModified'; messageId: string; content: string; assistantMessage: Message }
+  // resources (document library)
+  | { type: 'resourcesLoaded'; resources: ResourceItem[] }
+  | { type: 'resourceUploadStarted'; id: string; filename: string }
+  | { type: 'resourceUploadSucceeded'; id: string; resourceId: string }
+  | { type: 'resourceUploadFailed'; id: string; error: string }
+  | { type: 'resourceUploadRetried'; id: string }
+  | { type: 'resourceRemoved'; id: string };
 
 function sessionReducer(state: SessionState, action: AppAction): SessionState {
   switch (action.type) {
@@ -205,6 +230,45 @@ function messagesReducer(state: MessagesState, action: AppAction): MessagesState
   }
 }
 
+function resourcesReducer(state: ResourcesState, action: AppAction): ResourcesState {
+  switch (action.type) {
+    case 'resourcesLoaded':
+      // First (and only) library fetch - appended after whatever's already there so a
+      // freshly-started upload that raced ahead of this fetch isn't clobbered.
+      return { ...state, items: [...state.items, ...action.resources], isLoaded: true };
+    case 'resourceUploadStarted':
+      return {
+        ...state,
+        items: [{ id: action.id, resourceId: null, filename: action.filename, status: 'uploading' }, ...state.items],
+      };
+    case 'resourceUploadSucceeded':
+      return {
+        ...state,
+        items: state.items.map(item =>
+          item.id === action.id ? { ...item, resourceId: action.resourceId, status: 'ready' } : item
+        ),
+      };
+    case 'resourceUploadFailed':
+      return {
+        ...state,
+        items: state.items.map(item =>
+          item.id === action.id ? { ...item, status: 'failed', error: action.error } : item
+        ),
+      };
+    case 'resourceUploadRetried':
+      return {
+        ...state,
+        items: state.items.map(item =>
+          item.id === action.id ? { ...item, status: 'uploading', error: undefined } : item
+        ),
+      };
+    case 'resourceRemoved':
+      return { ...state, items: state.items.filter(item => item.id !== action.id) };
+    default:
+      return state;
+  }
+}
+
 let actionCount = 0;
 
 export function appStateReducer(state: AppState, action: AppAction): AppState {
@@ -221,5 +285,6 @@ export function appStateReducer(state: AppState, action: AppAction): AppState {
     error: errorReducer(state.error, action),
     chat: chatReducer(state.chat, action),
     messages: messagesReducer(state.messages, action),
+    resources: resourcesReducer(state.resources, action),
   };
 }

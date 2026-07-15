@@ -2,7 +2,7 @@
 
 import { createContext, use } from 'react';
 import type { Chat, Message } from '../types/chat';
-import type { ErrorType } from '../hooks/chat/appState';
+import type { ErrorType, ResourceItem } from '../hooks/chat/appState';
 
 /**
  * State and actions are split by domain so a change to one slice only re-renders
@@ -36,6 +36,16 @@ export type MessagesValue = {
   isLoading: boolean;
 };
 
+export type ResourcesValue = {
+  items: ResourceItem[];
+  isLoaded: boolean;
+  ensureLoaded: () => void;
+  uploadResource: (file: File) => string;
+  cancelUpload: (id: string) => void;
+  retryUpload: (id: string) => void;
+  removeResource: (id: string) => void;
+};
+
 export type ChatActionsValue = {
   sendMessage: (content: string) => void;
   deleteChat: (chatId: string) => void;
@@ -50,6 +60,7 @@ export const ErrorContext = createContext<ErrorValue | null>(null);
 export const ChatsContext = createContext<ChatsValue | null>(null);
 export const MessagesContext = createContext<MessagesValue | null>(null);
 export const ChatActionsContext = createContext<ChatActionsValue | null>(null);
+export const ResourcesContext = createContext<ResourcesValue | null>(null);
 
 function useRequired<T>(context: React.Context<T | null>, name: string): T {
   const value = use(context);
@@ -63,3 +74,4 @@ export const useErrorValue = () => useRequired(ErrorContext, 'useErrorValue');
 export const useChats = () => useRequired(ChatsContext, 'useChats');
 export const useMessages = () => useRequired(MessagesContext, 'useMessages');
 export const useChatActions = () => useRequired(ChatActionsContext, 'useChatActions');
+export const useResources = () => useRequired(ResourcesContext, 'useResources');

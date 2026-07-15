@@ -3,6 +3,7 @@
 import { useReducer, useMemo } from 'react';
 import { appStateReducer, initialAppState } from '../hooks/chat/appState';
 import { useChatController } from '../hooks/chat/useChatController';
+import { useResourcesController } from '../hooks/chat/useResourcesController';
 import { useSession } from '../hooks/useSession';
 import { useError } from '../hooks/chat/useError';
 import { useNavigation } from '../hooks/useNavigation';
@@ -13,12 +14,14 @@ import {
   ChatActionsContext,
   ChatsContext,
   MessagesContext,
+  ResourcesContext,
   type SessionValue,
   type NavigationValue,
   type ErrorValue,
   type ChatsValue,
   type MessagesValue,
   type ChatActionsValue,
+  type ResourcesValue,
 } from './chatContext';
 
 export default function ChatProvider({ backendUrl, children }: { backendUrl: string; children: React.ReactNode }) {
@@ -28,6 +31,8 @@ export default function ChatProvider({ backendUrl, children }: { backendUrl: str
   const { dismissError } = useError(dispatch);
   const { logout } = useSession(dispatch, backendUrl);
   const { deleteChat, sendMessage, modifyMessage, retryMessage } = useChatController(state.session.id, dispatch, backendUrl);
+  const { ensureLoaded, uploadResource, cancelUpload, retryUpload, removeResource } =
+    useResourcesController(dispatch, backendUrl, state.resources.isLoaded);
 
   const navigation: NavigationValue = useMemo(() => ({ goHome }), [goHome]);
   const session: SessionValue = useMemo(() => ({ logout }), [logout]);
@@ -47,6 +52,18 @@ export default function ChatProvider({ backendUrl, children }: { backendUrl: str
     () => ({ messages: state.messages.fetchedMessages, isLoading: state.messages.isLoading }),
     [state.messages],
   );
+  const resources: ResourcesValue = useMemo(
+    () => ({
+      items: state.resources.items,
+      isLoaded: state.resources.isLoaded,
+      ensureLoaded,
+      uploadResource,
+      cancelUpload,
+      retryUpload,
+      removeResource,
+    }),
+    [state.resources, ensureLoaded, uploadResource, cancelUpload, retryUpload, removeResource],
+  );
 
   return (
     <SessionContext value={session}>
@@ -54,7 +71,9 @@ export default function ChatProvider({ backendUrl, children }: { backendUrl: str
         <ErrorContext value={error}>
           <ChatActionsContext value={chatActions}>
             <ChatsContext value={chats}>
-              <MessagesContext value={messages}>{children}</MessagesContext>
+              <MessagesContext value={messages}>
+                <ResourcesContext value={resources}>{children}</ResourcesContext>
+              </MessagesContext>
             </ChatsContext>
           </ChatActionsContext>
         </ErrorContext>

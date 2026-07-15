@@ -2,10 +2,11 @@
 
 import { memo, useState } from 'react';
 import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
-import { Pencil, RotateCw } from 'lucide-react';
+import { FileText, Pencil, RotateCw } from 'lucide-react';
 import type { Message } from '../../../types/chat';
 import MessageInput from '../MessageInput/MessageInput';
 import { useChatActions } from '../../../context/chatContext';
+import { DOCUMENT_LINK_SCHEME, isDocumentOnlyContent } from '../../../hooks/chat/documentLink';
 import styles from './Message.module.css';
 
 type MessageProps = {
@@ -18,12 +19,27 @@ const mdComponents = {
     // eslint-disable-next-line @next/next/no-img-element -- pasted images are arbitrary data URLs, not build-time assets
     <img {...props} className={styles.mdImage} alt={props.alt ?? ''} />
   ),
+  // Document links are `[filename](resource://id)` - render as a non-clickable icon+filename
+  // card rather than a link; open/download is out of scope for now.
+  a: (props: React.ComponentPropsWithoutRef<'a'>) => {
+    if (props.href?.startsWith(DOCUMENT_LINK_SCHEME)) {
+      return (
+        <span className={styles.documentCard}>
+          <FileText size={14} strokeWidth={1.5} />
+          {props.children}
+        </span>
+      );
+    }
+    return <a {...props} />;
+  },
 };
 
-// react-markdown's default urlTransform strips `data:` URIs (only allows http(s)/mailto/xmpp/irc).
-// Pasted images rely on `data:image/...` src, so allow that prefix through and sanitize everything else as usual.
+// react-markdown's default urlTransform strips `data:` URIs (only allows http(s)/mailto/xmpp/irc)
+// and unrecognized schemes generally. Pasted images rely on `data:image/...` src and document
+// links on the `resource://` scheme, so allow both through and sanitize everything else as usual.
 function mdUrlTransform(url: string) {
-  return url.startsWith('data:image/') ? url : defaultUrlTransform(url);
+  if (url.startsWith('data:image/') || url.startsWith(DOCUMENT_LINK_SCHEME)) return url;
+  return defaultUrlTransform(url);
 }
 
 // Parsing markdown is the expensive part of rendering a message — pasted images live in
@@ -65,7 +81,7 @@ function Message({ message, editDisabled }: MessageProps) {
     return (
       <div className={styles.userWrapper}>
         <div className={styles.userGroup}>
-          {modifyMessage && (
+          {modifyMessage && !isDocumentOnlyContent(message.content) && (
             <button
               className={styles.editButton}
               onClick={() => setIsEditing(true)}
