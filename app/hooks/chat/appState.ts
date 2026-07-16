@@ -233,8 +233,13 @@ function messagesReducer(state: MessagesState, action: AppAction): MessagesState
 function resourcesReducer(state: ResourcesState, action: AppAction): ResourcesState {
   switch (action.type) {
     case 'resourcesLoaded':
-      // First (and only) library fetch - appended after whatever's already there so a
-      // freshly-started upload that raced ahead of this fetch isn't clobbered.
+      // Guarded here, not just in the controller's `isLoaded` check: React Strict Mode's
+      // dev-mode double-invoke can fire `ensureLoaded` twice before the first fetch
+      // resolves, so both race past that check with the same stale `false` and both
+      // dispatch this - without the guard, every item would be appended twice.
+      if (state.isLoaded) return state;
+      // Appended after whatever's already there so a freshly-started upload that raced
+      // ahead of this fetch isn't clobbered.
       return { ...state, items: [...state.items, ...action.resources], isLoaded: true };
     case 'resourceUploadStarted':
       return {

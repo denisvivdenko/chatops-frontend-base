@@ -65,9 +65,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.45rem 0.9rem;
+  padding: 0.9rem 0.9rem;
   border: 1px solid var(--color-border);
-  border-radius: 999px;
+  border-radius: 0.9rem;
   background: none;
   color: var(--color-text);
   cursor: pointer;
@@ -104,7 +104,7 @@
 .card {
   border: 1px solid var(--color-border);
   border-radius: 0.9rem;
-  padding: 0.5rem 0.75rem;
+  padding: 1.2rem 0.75rem;
 }
 
 .cardRow {
@@ -116,6 +116,24 @@
 .cardRow input[type='checkbox'] {
   flex-shrink: 0;
   cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0;
+  border: 1.5px solid var(--color-border);
+  border-radius: 50%;
+  background-color: var(--color-bg);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 65%;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.cardRow input[type='checkbox']:checked {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8 6.5 11.5 13 4.5"/></svg>');
 }
 
 label.cardRow {
@@ -165,7 +183,7 @@ label.cardRow {
 }
 
 .addToChatButton {
-  padding: 0.5rem 1.1rem;
+  padding: 0.9rem 1.1rem;
   border: none;
   border-radius: 999px;
   background: var(--color-accent);
@@ -178,4 +196,66 @@ label.cardRow {
 .addToChatButton:disabled {
   opacity: 0.35;
   cursor: default;
+}
+
+.confirmOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.confirmPanel {
+  width: 100%;
+  max-width: 22rem;
+  padding: 1.25rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 1.25rem;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+}
+
+.confirmMessage {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.confirmActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.confirmCancelButton {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: none;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.confirmCancelButton:hover {
+  background: var(--color-bg-subtle);
+}
+
+.confirmReplaceButton {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: var(--color-bg);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: opacity 0.15s;
+}
+
+.confirmReplaceButton:hover {
+  opacity: 0.85;
 }

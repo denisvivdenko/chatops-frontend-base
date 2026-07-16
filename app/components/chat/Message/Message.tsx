@@ -25,8 +25,8 @@ const mdComponents = {
     if (props.href?.startsWith(DOCUMENT_LINK_SCHEME)) {
       return (
         <span className={styles.documentCard}>
-          <FileText size={14} strokeWidth={1.5} />
-          {props.children}
+          <FileText size={20} strokeWidth={1.5}/>
+          <span className={styles.documentName}>{props.children}</span>
         </span>
       );
     }
