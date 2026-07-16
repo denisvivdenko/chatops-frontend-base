@@ -110,6 +110,11 @@ async function readTokenStream(response: Response, onToken: (chunk: string) => v
           continue;
         }
 
+        // Backend is still preparing the reply (e.g. parsing an attached document) and has
+        // no token yet - keeps the connection alive without anything for the caller to do.
+        // The UI infers "still preparing" from empty content, so no callback is needed here.
+        if (eventType === 'loading') continue;
+
         const { token } = JSON.parse(data) as { seq_id: number; token: string };
         pending += token;
         schedule();

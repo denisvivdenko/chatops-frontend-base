@@ -5,6 +5,7 @@ import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import { FileText, Pencil, RotateCw } from 'lucide-react';
 import type { Message } from '../../../types/chat';
 import MessageInput from '../MessageInput/MessageInput';
+import Spinner from '../../feedback/Spinner/Spinner';
 import { useChatActions } from '../../../context/chatContext';
 import { DOCUMENT_LINK_SCHEME, isDocumentOnlyContent } from '../../../hooks/chat/documentLink';
 import styles from './Message.module.css';
@@ -110,6 +111,14 @@ function Message({ message, editDisabled }: MessageProps) {
             Retry
           </button>
         </div>
+      </div>
+    );
+  }
+
+  if (message.status === 'pending' && !message.content) {
+    return (
+      <div className={styles.assistantWrapper}>
+        <Spinner size={16} />
       </div>
     );
   }
