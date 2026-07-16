@@ -22,7 +22,6 @@ export default function MessageList() {
       data={messages}
       computeItemKey={(_, msg) => msg.id}
       initialTopMostItemIndex={messages.length - 1}
-      alignToBottom
       followOutput={isAtBottom => (isAtBottom ? 'smooth' : false)}
       atBottomThreshold={80}
       increaseViewportBy={{ top: 800, bottom: 800 }}
