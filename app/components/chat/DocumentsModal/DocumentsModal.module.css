@@ -183,7 +183,7 @@ label.cardRow {
 }
 
 .addToChatButton {
-  padding: 0.9rem 1.1rem;
+  padding: 0.45rem 0.6rem;
   border: none;
   border-radius: 999px;
   background: var(--color-accent);
