@@ -6,8 +6,13 @@
 .item {
   max-width: 50rem;
   width: 100%;
-  margin: 0 auto 2.5rem;
-  padding: 0 1rem;
+  /* Vertical spacing must be padding, not margin: Virtuoso measures each item's
+     border-box height to compute scroll offsets, and margins fall outside that box
+     (per react-virtuoso's own docs, this is "the Kryptonite of Virtuoso's content
+     measuring mechanism"). A margin here under-reports every item's height by
+     2.5rem, which compounds across the list into scroll-position drift/jumps. */
+  margin: 0 auto;
+  padding: 0 1rem 2.5rem;
   box-sizing: border-box;
 }
 

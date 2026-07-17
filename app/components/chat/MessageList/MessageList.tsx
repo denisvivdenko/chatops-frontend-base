@@ -22,7 +22,12 @@ export default function MessageList() {
       data={messages}
       computeItemKey={(_, msg) => msg.id}
       initialTopMostItemIndex={messages.length - 1}
-      followOutput={isAtBottom => (isAtBottom ? 'smooth' : false)}
+      // 'smooth' animates toward the bottom; while a reply is streaming, every token
+      // moves that target again, so the animation restarts dozens of times a second
+      // and never catches up — visible as jittery, self-fighting scrolling. Snap
+      // instantly ('auto') while streaming, and reserve the animated scroll for
+      // discrete jumps like sending a message.
+      followOutput={isAtBottom => (isAtBottom ? (editingBlocked ? 'auto' : 'smooth') : false)}
       atBottomThreshold={80}
       increaseViewportBy={{ top: 800, bottom: 800 }}
       components={{ Header, Footer }}
