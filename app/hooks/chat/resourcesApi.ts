@@ -1,8 +1,8 @@
-import { HttpError, type AuthorizedFetch } from './chatApi';
+import { HttpError, type AuthorizedFetch } from '../../services/chatService';
 
 /**
  * Transport layer for the document library (Phase A - upload only). Sibling to
- * chatApi.ts: same domain-objects-in/HttpError-out shape, no reducer/React here.
+ * chatService.ts: same domain-objects-in/HttpError-out shape, no reducer/React here.
  */
 
 type RawResource = { id: string; filename: string };

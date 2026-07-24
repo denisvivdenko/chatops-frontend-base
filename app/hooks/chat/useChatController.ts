@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import type { Dispatch } from 'react';
 import type { Message } from '../../types/chat';
 import type { AppAction } from './appState';
-import { createChatApi, HttpError, type AuthorizedFetch } from './chatApi';
+import { createChatApi, HttpError, type AuthorizedFetch } from '../../services/chatService';
 import { createChatStream } from './chatStream';
 
 /**

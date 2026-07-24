@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { Dispatch } from 'react';
 import { createAnonymousSession, refreshAccessToken, HttpError } from '../services/authService';
 import type { AppAction } from './chat/appState';
-import type { AuthorizedFetch } from './chat/chatApi';
+import type { AuthorizedFetch } from '../services/chatService';
 
 const ACCESS_TOKEN_STORAGE_KEY = 'chatops.accessToken';
 

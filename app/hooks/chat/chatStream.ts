@@ -1,5 +1,5 @@
 import type { Message } from '../../types/chat';
-import type { ChatApi, StreamOutcome } from './chatApi';
+import type { ChatApi, StreamOutcome } from '../../services/chatService';
 
 const MAX_RECONNECT_ATTEMPTS = 3;
 const RECONNECT_DELAY_MS = 500;

@@ -4,7 +4,7 @@ import { useCallback, useMemo, useRef } from 'react';
 import type { Dispatch } from 'react';
 import type { AppAction } from './appState';
 import { createResourcesApi } from './resourcesApi';
-import type { AuthorizedFetch } from './chatApi';
+import type { AuthorizedFetch } from '../../services/chatService';
 
 const UPLOAD_TIMEOUT_MS = 60_000;
 
