@@ -1,15 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { AnonymousSessionError, RefreshTokenError, createAnonymousSession, refreshAccessToken } from './authSession';
-
-/**
- * Real integration tests: every call here hits the actual backend at BASE_URL, no
- * mocked fetch and no fabricated responses. Requires the backend to be running
- * locally (see Makefile: BACKEND_URL defaults to http://localhost:8000/api).
- */
+import { AnonymousSessionError, RefreshTokenError, createAnonymousSession, refreshAccessToken } from './authService';
 
 const BASE_URL = process.env.BACKEND_URL ?? 'http://localhost:8000/api';
 
-describe('authSession (real backend integration)', () => {
+describe('authService (real backend integration)', () => {
   it('createAnonymousSession returns a usable access token', async () => {
     const token = await createAnonymousSession(BASE_URL);
 

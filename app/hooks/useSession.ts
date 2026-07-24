@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Dispatch } from 'react';
-import { createAnonymousSession, refreshAccessToken, RefreshTokenError } from './authSession';
+import { createAnonymousSession, refreshAccessToken, RefreshTokenError } from '../services/authService';
 import type { AppAction } from './chat/appState';
 import type { AuthorizedFetch } from './chat/chatApi';
 
