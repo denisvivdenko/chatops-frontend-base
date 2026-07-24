@@ -4,6 +4,7 @@ import { useCallback, useMemo, useRef } from 'react';
 import type { Dispatch } from 'react';
 import type { AppAction } from './appState';
 import { createResourcesApi } from './resourcesApi';
+import type { AuthorizedFetch } from './chatApi';
 
 const UPLOAD_TIMEOUT_MS = 60_000;
 
@@ -14,8 +15,8 @@ const UPLOAD_TIMEOUT_MS = 60_000;
  * is the source of truth for everything rendered. Stateless otherwise, same shape as
  * useChatController.
  */
-export function useResourcesController(dispatch: Dispatch<AppAction>, baseUrl: string, isLoaded: boolean) {
-  const api = useMemo(() => createResourcesApi(baseUrl), [baseUrl]);
+export function useResourcesController(dispatch: Dispatch<AppAction>, authorizedFetch: AuthorizedFetch, isLoaded: boolean) {
+  const api = useMemo(() => createResourcesApi(authorizedFetch), [authorizedFetch]);
   const controllers = useRef(new Map<string, AbortController>());
   const files = useRef(new Map<string, File>());
 

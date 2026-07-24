@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import type { Dispatch } from 'react';
 import type { Message } from '../../types/chat';
 import type { AppAction } from './appState';
-import { createChatApi, HttpError } from './chatApi';
+import { createChatApi, HttpError, type AuthorizedFetch } from './chatApi';
 import { createChatStream } from './chatStream';
 
 /**
@@ -15,12 +15,12 @@ import { createChatStream } from './chatStream';
  * identity comes in as `sessionId`. Returns the chat actions (retry/modify already
  * bound to the active chat, null on the home route).
  */
-export function useChatController(sessionId: string | null, dispatch: Dispatch<AppAction>, baseUrl: string) {
+export function useChatController(sessionId: string | null, dispatch: Dispatch<AppAction>, authorizedFetch: AuthorizedFetch) {
   const router = useRouter();
   const { chatId } = useParams<{ chatId?: string }>();
   const activeChatId = chatId ?? null;
 
-  const api = useMemo(() => createChatApi(baseUrl), [baseUrl]);
+  const api = useMemo(() => createChatApi(authorizedFetch), [authorizedFetch]);
 
   // The controller is the sole writer of activeChatId: it mirrors the URL into the
   // store so components read it from context instead of reaching for `useParams`.

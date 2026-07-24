@@ -1,5 +1,4 @@
-import { authorizedFetch } from '../authSession';
-import { HttpError } from './chatApi';
+import { HttpError, type AuthorizedFetch } from './chatApi';
 
 /**
  * Transport layer for the document library (Phase A - upload only). Sibling to
@@ -21,10 +20,10 @@ function mapResource(raw: RawResource): ResourceSummary {
 
 export type ResourcesApi = ReturnType<typeof createResourcesApi>;
 
-export function createResourcesApi(baseUrl: string) {
+export function createResourcesApi(authorizedFetch: AuthorizedFetch) {
   return {
     async listResources(): Promise<ResourceSummary[]> {
-      const res = await authorizedFetch(baseUrl, '/resources');
+      const res = await authorizedFetch('/resources');
       const data = await parseJson<RawResource[]>(res);
       return data.map(mapResource);
     },
@@ -32,7 +31,7 @@ export function createResourcesApi(baseUrl: string) {
     async uploadResource(file: File, signal: AbortSignal): Promise<ResourceSummary> {
       const body = new FormData();
       body.append('file', file);
-      const res = await authorizedFetch(baseUrl, '/upload-resource', { method: 'POST', body, signal });
+      const res = await authorizedFetch('/upload-resource', { method: 'POST', body, signal });
       return mapResource(await parseJson<RawResource>(res));
     },
   };

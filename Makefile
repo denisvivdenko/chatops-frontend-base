@@ -2,7 +2,7 @@ IMAGE_NAME = chatops-frontend:latest
 PORT = 3000
 BACKEND_URL = http://localhost:8000/api
 
-.PHONY: build run dev
+.PHONY: build run dev test
 
 build:
 	docker build -t $(IMAGE_NAME) .
@@ -13,6 +13,9 @@ run:
 
 dev:
 	BACKEND_URL=$(BACKEND_URL) npm run dev -- --port $(PORT)
+
+test:
+	BACKEND_URL=$(BACKEND_URL) npx vitest run
 
 prod:
 	BACKEND_URL=$(BACKEND_URL) npm run build && \
