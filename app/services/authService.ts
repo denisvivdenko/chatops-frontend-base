@@ -1,12 +1,6 @@
-export class AnonymousSessionError extends Error {
-  constructor(public status: number) {
-    super(`Failed to create anonymous session: ${status}`);
-  }
-}
-
-export class RefreshTokenError extends Error {
-  constructor(public status: number) {
-    super(`Failed to refresh access token: ${status}`);
+export class HttpError extends Error {
+  constructor(public status: number, message = `Request failed with status ${status}`) {
+    super(message);
   }
 }
 
@@ -15,7 +9,7 @@ export async function createAnonymousSession(baseUrl: string): Promise<string> {
     method: 'POST',
     credentials: 'include',
   });
-  if (!res.ok) throw new AnonymousSessionError(res.status);
+  if (!res.ok) throw new HttpError(res.status, `Failed to create anonymous session: ${res.status}`);
   const data = await res.json() as { access_token: string };
   return data.access_token;
 }
@@ -29,7 +23,7 @@ export async function refreshAccessToken(baseUrl: string, init: RequestInit = {}
     credentials: 'include',
     ...init,
   });
-  if (!res.ok) throw new RefreshTokenError(res.status);
+  if (!res.ok) throw new HttpError(res.status, `Failed to refresh access token: ${res.status}`);
   const data = await res.json() as { access_token: string };
   return data.access_token;
 }

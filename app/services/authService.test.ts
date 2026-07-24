@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { AnonymousSessionError, RefreshTokenError, createAnonymousSession, refreshAccessToken } from './authService';
+import { HttpError, createAnonymousSession, refreshAccessToken } from './authService';
 
 const BASE_URL = process.env.BACKEND_URL ?? 'http://localhost:8000/api';
 
-describe('authService (real backend integration)', () => {
+describe('authService', () => {
   it('createAnonymousSession returns a usable access token', async () => {
     const token = await createAnonymousSession(BASE_URL);
 
@@ -11,7 +11,7 @@ describe('authService (real backend integration)', () => {
     expect(token.length).toBeGreaterThan(0);
   });
 
-  it('createAnonymousSession throws an AnonymousSessionError carrying the real HTTP status when the request is not successful', async () => {
+  it('createAnonymousSession throws an HttpError carrying the real HTTP status when the request is not successful', async () => {
     let error: unknown;
     try {
       await createAnonymousSession(`${BASE_URL}/does-not-exist`);
@@ -19,11 +19,11 @@ describe('authService (real backend integration)', () => {
       error = err;
     }
 
-    expect(error).toBeInstanceOf(AnonymousSessionError);
-    expect((error as AnonymousSessionError).status).toBe(404);
+    expect(error).toBeInstanceOf(HttpError);
+    expect((error as HttpError).status).toBe(404);
   });
 
-  it('refreshAccessToken throws a RefreshTokenError carrying the real HTTP status when there is no refresh cookie', async () => {
+  it('refreshAccessToken throws an HttpError carrying the real HTTP status when there is no refresh cookie', async () => {
     let error: unknown;
     try {
       await refreshAccessToken(BASE_URL);
@@ -31,8 +31,8 @@ describe('authService (real backend integration)', () => {
       error = err;
     }
 
-    expect(error).toBeInstanceOf(RefreshTokenError);
-    expect((error as RefreshTokenError).status).toBe(401);
+    expect(error).toBeInstanceOf(HttpError);
+    expect((error as HttpError).status).toBe(401);
   });
 
   it('refreshAccessToken returns a new access token when a valid refresh cookie is presented', async () => {

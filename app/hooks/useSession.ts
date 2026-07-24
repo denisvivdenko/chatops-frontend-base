@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Dispatch } from 'react';
-import { createAnonymousSession, refreshAccessToken, RefreshTokenError } from '../services/authService';
+import { createAnonymousSession, refreshAccessToken, HttpError } from '../services/authService';
 import type { AppAction } from './chat/appState';
 import type { AuthorizedFetch } from './chat/chatApi';
 
@@ -76,7 +76,7 @@ export function useSession(dispatch: Dispatch<AppAction>, baseUrl: string) {
       // Only a rejected refresh (invalid/expired refresh token) triggers the
       // re-anonymize fallback - anything else (a real network failure, say) is
       // unexpected and should surface, not be silently absorbed into it.
-      if (!(err instanceof RefreshTokenError)) throw err;
+      if (!(err instanceof HttpError)) throw err;
       setToken(await createAnonymousSession(baseUrl));
       return withAuth(accessToken.current);
     }
