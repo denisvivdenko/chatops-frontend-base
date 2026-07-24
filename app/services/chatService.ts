@@ -7,8 +7,8 @@ import type { Chat, Message } from '../types/chat';
  * a failure means and what state should change) is the caller's job.
  */
 
-/** Shape `useSession`'s authorizedFetch fulfills - the one way this layer reaches the backend. */
-export type AuthorizedFetch = (path: string, init?: RequestInit) => Promise<Response>;
+/** Shape `useSession`'s sessionFetch fulfills - the one way this layer reaches the backend. */
+export type SessionFetch = (path: string, init?: RequestInit) => Promise<Response>;
 
 export class HttpError extends Error {
   constructor(public status: number) {
@@ -130,22 +130,22 @@ async function readTokenStream(response: Response, onToken: (chunk: string) => v
 
 export type ChatApi = ReturnType<typeof createChatApi>;
 
-export function createChatApi(authorizedFetch: AuthorizedFetch) {
+export function createChatApi(sessionFetch: SessionFetch) {
   return {
     async fetchChats(): Promise<Chat[]> {
-      const res = await authorizedFetch('/chats?limit=50');
+      const res = await sessionFetch('/chats?limit=50');
       const data = await parseJson<RawChat[]>(res);
       return data.map(mapChat);
     },
 
     async fetchMessages(chatId: string): Promise<Message[]> {
-      const res = await authorizedFetch(`/chats/${chatId}/messages`);
+      const res = await sessionFetch(`/chats/${chatId}/messages`);
       const data = await parseJson<RawMessage[]>(res);
       return data.map(mapMessage);
     },
 
     async createChat(message: string): Promise<Chat> {
-      const res = await authorizedFetch('/chats', {
+      const res = await sessionFetch('/chats', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message }),
@@ -154,7 +154,7 @@ export function createChatApi(authorizedFetch: AuthorizedFetch) {
     },
 
     async postMessage(chatId: string, content: string): Promise<Message> {
-      const res = await authorizedFetch(`/chats/${chatId}/messages`, {
+      const res = await sessionFetch(`/chats/${chatId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content }),
@@ -163,14 +163,14 @@ export function createChatApi(authorizedFetch: AuthorizedFetch) {
     },
 
     async retryMessage(chatId: string, messageId: string): Promise<Message> {
-      const res = await authorizedFetch(`/chats/${chatId}/messages/${messageId}/retry`, {
+      const res = await sessionFetch(`/chats/${chatId}/messages/${messageId}/retry`, {
         method: 'POST',
       });
       return mapMessage(await parseJson<RawMessage>(res));
     },
 
     async modifyMessage(chatId: string, messageId: string, content: string): Promise<Message> {
-      const res = await authorizedFetch(`/chats/${chatId}/messages/${messageId}/modify`, {
+      const res = await sessionFetch(`/chats/${chatId}/messages/${messageId}/modify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content }),
@@ -179,12 +179,12 @@ export function createChatApi(authorizedFetch: AuthorizedFetch) {
     },
 
     async deleteChat(chatId: string): Promise<void> {
-      const res = await authorizedFetch(`/chats/${chatId}`, { method: 'DELETE' });
+      const res = await sessionFetch(`/chats/${chatId}`, { method: 'DELETE' });
       if (!res.ok) throw new HttpError(res.status);
     },
 
     openStream(chatId: string, messageId: string, signal: AbortSignal): Promise<Response> {
-      return authorizedFetch(
+      return sessionFetch(
         `/chats/${chatId}/messages/${messageId}/stream`,
         { signal, headers: { Accept: 'text/event-stream' } },
       );

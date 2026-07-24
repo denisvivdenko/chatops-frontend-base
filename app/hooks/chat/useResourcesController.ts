@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import type { Dispatch } from 'react';
 import type { AppAction } from './appState';
-import { listResources, uploadResource as uploadResourceRequest } from '../../services/resourcesService';
-import type { AuthorizedFetch } from '../../services/chatService';
+import { createResourcesApi } from '../../services/resourcesService';
+import type { SessionFetch } from '../../services/chatService';
 
 const UPLOAD_TIMEOUT_MS = 60_000;
 
@@ -15,7 +15,8 @@ const UPLOAD_TIMEOUT_MS = 60_000;
  * is the source of truth for everything rendered. Stateless otherwise, same shape as
  * useChatController.
  */
-export function useResourcesController(dispatch: Dispatch<AppAction>, authorizedFetch: AuthorizedFetch, isLoaded: boolean) {
+export function useResourcesController(dispatch: Dispatch<AppAction>, sessionFetch: SessionFetch, isLoaded: boolean) {
+  const api = useMemo(() => createResourcesApi(sessionFetch), [sessionFetch]);
   const controllers = useRef(new Map<string, AbortController>());
   const files = useRef(new Map<string, File>());
 
@@ -24,7 +25,7 @@ export function useResourcesController(dispatch: Dispatch<AppAction>, authorized
     controllers.current.set(id, abort);
     const signal = AbortSignal.any([abort.signal, AbortSignal.timeout(UPLOAD_TIMEOUT_MS)]);
 
-    uploadResourceRequest(authorizedFetch, file, signal)
+    api.uploadResource(file, signal)
       .then(resource => {
         controllers.current.delete(id);
         dispatch({ type: 'resourceUploadSucceeded', id, resourceId: resource.id });
@@ -35,17 +36,17 @@ export function useResourcesController(dispatch: Dispatch<AppAction>, authorized
         if (abort.signal.aborted) return;
         dispatch({ type: 'resourceUploadFailed', id, error: 'Upload failed.' });
       });
-  }, [authorizedFetch, dispatch]);
+  }, [api, dispatch]);
 
   const ensureLoaded = useCallback(() => {
     if (isLoaded) return;
-    listResources(authorizedFetch).then(resources => {
+    api.listResources().then(resources => {
       dispatch({
         type: 'resourcesLoaded',
         resources: resources.map(r => ({ id: r.id, resourceId: r.id, filename: r.filename, status: 'ready' as const })),
       });
     });
-  }, [isLoaded, authorizedFetch, dispatch]);
+  }, [isLoaded, api, dispatch]);
 
   const uploadResource = useCallback((file: File): string => {
     const id = crypto.randomUUID();

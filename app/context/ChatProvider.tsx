@@ -29,10 +29,10 @@ export default function ChatProvider({ backendUrl, children }: { backendUrl: str
 
   const { goHome } = useNavigation();
   const { dismissError } = useError(dispatch);
-  const { logout, authorizedFetch } = useSession(dispatch, backendUrl);
-  const { deleteChat, sendMessage, modifyMessage, retryMessage } = useChatController(state.session.id, dispatch, authorizedFetch);
+  const { logout, sessionFetch } = useSession(dispatch, backendUrl);
+  const { deleteChat, sendMessage, modifyMessage, retryMessage } = useChatController(state.session.id, dispatch, sessionFetch);
   const { ensureLoaded, uploadResource, cancelUpload, retryUpload, removeResource } =
-    useResourcesController(dispatch, authorizedFetch, state.resources.isLoaded);
+    useResourcesController(dispatch, sessionFetch, state.resources.isLoaded);
 
   const navigation: NavigationValue = useMemo(() => ({ goHome }), [goHome]);
   const session: SessionValue = useMemo(() => ({ logout }), [logout]);

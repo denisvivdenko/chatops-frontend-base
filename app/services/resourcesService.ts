@@ -1,4 +1,4 @@
-import { HttpError, type AuthorizedFetch } from './chatService';
+import { HttpError, type SessionFetch } from './chatService';
 
 /**
  * Transport layer for the document library (Phase A - upload only). Sibling to
@@ -18,15 +18,21 @@ function mapResource(raw: RawResource): ResourceSummary {
   return { id: raw.id, filename: raw.filename };
 }
 
-export async function listResources(authorizedFetch: AuthorizedFetch): Promise<ResourceSummary[]> {
-  const res = await authorizedFetch('/resources');
-  const data = await parseJson<RawResource[]>(res);
-  return data.map(mapResource);
-}
+export type ResourcesApi = ReturnType<typeof createResourcesApi>;
 
-export async function uploadResource(authorizedFetch: AuthorizedFetch, file: File, signal: AbortSignal): Promise<ResourceSummary> {
-  const body = new FormData();
-  body.append('file', file);
-  const res = await authorizedFetch('/upload-resource', { method: 'POST', body, signal });
-  return mapResource(await parseJson<RawResource>(res));
+export function createResourcesApi(sessionFetch: SessionFetch) {
+  return {
+    async listResources(): Promise<ResourceSummary[]> {
+      const res = await sessionFetch('/resources');
+      const data = await parseJson<RawResource[]>(res);
+      return data.map(mapResource);
+    },
+
+    async uploadResource(file: File, signal: AbortSignal): Promise<ResourceSummary> {
+      const body = new FormData();
+      body.append('file', file);
+      const res = await sessionFetch('/upload-resource', { method: 'POST', body, signal });
+      return mapResource(await parseJson<RawResource>(res));
+    },
+  };
 }

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { Dispatch } from 'react';
 import { createAnonymousSession, refreshAccessToken, HttpError } from '../services/authService';
 import type { AppAction } from './chat/appState';
-import type { AuthorizedFetch } from '../services/chatService';
+import type { SessionFetch } from '../services/chatService';
 
 const ACCESS_TOKEN_STORAGE_KEY = 'chatops.accessToken';
 
@@ -25,7 +25,7 @@ function persistToken(token: string | null) {
  * held in a ref (not the reducer) since a refresh shouldn't trigger a re-render. It
  * bootstraps a session once on mount and announces it with `sessionReady` (which the
  * store uses to gate loads and re-key the chat effects) - a non-destructive marker,
- * so it never clobbers other state. `authorizedFetch` is the one way the rest of the
+ * so it never clobbers other state. `sessionFetch` is the one way the rest of the
  * app talks to the backend: it attaches the current token and, on a 401, refreshes it
  * (or starts a brand new anonymous session if the refresh token is gone) before
  * retrying once. `logout` abandons the current identity for a new one: it navigates
@@ -59,7 +59,7 @@ export function useSession(dispatch: Dispatch<AppAction>, baseUrl: string) {
     return () => { cancelled = true; };
   }, [baseUrl, setToken, dispatch]);
 
-  const authorizedFetch: AuthorizedFetch = useCallback(async (path, init = {}) => {
+  const sessionFetch: SessionFetch = useCallback(async (path, init = {}) => {
     async function withAuth(token: string | null) {
       const headers = new Headers(init.headers);
       if (token) headers.set('Authorization', `Bearer ${token}`);
@@ -93,5 +93,5 @@ export function useSession(dispatch: Dispatch<AppAction>, baseUrl: string) {
     dispatch({ type: 'sessionReset', id: crypto.randomUUID() });
   }, [baseUrl, router, dispatch, setToken]);
 
-  return { logout, authorizedFetch };
+  return { logout, sessionFetch };
 }

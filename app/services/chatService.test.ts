@@ -1,14 +1,14 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { createAnonymousSession } from './authService';
-import { createChatApi, HttpError, type AuthorizedFetch } from './chatService';
+import { createChatApi, HttpError, type SessionFetch } from './chatService';
 
 const BASE_URL = process.env.BACKEND_URL ?? 'http://localhost:8000/api';
 
-let authorizedFetch: AuthorizedFetch;
+let sessionFetch: SessionFetch;
 
 beforeAll(async () => {
   const token = await createAnonymousSession(BASE_URL);
-  authorizedFetch = (path, init = {}) => {
+  sessionFetch = (path, init = {}) => {
     const headers = new Headers(init.headers);
     headers.set('Authorization', `Bearer ${token}`);
     return fetch(`${BASE_URL}${path}`, { ...init, headers });
@@ -17,7 +17,7 @@ beforeAll(async () => {
 
 describe('chatService', () => {
   it('createChat creates a chat that then shows up in fetchChats', async () => {
-    const api = createChatApi(authorizedFetch);
+    const api = createChatApi(sessionFetch);
 
     const chat = await api.createChat('hello from chatService test');
     expect(chat.id).toBeTruthy();
@@ -27,7 +27,7 @@ describe('chatService', () => {
   });
 
   it('postMessage while the first reply is still pending is rejected with 409', async () => {
-    const api = createChatApi(authorizedFetch);
+    const api = createChatApi(sessionFetch);
     const chat = await api.createChat('seed chat for pending-guard test');
 
     let error: unknown;
@@ -42,7 +42,7 @@ describe('chatService', () => {
   });
 
   it('postMessage adds a message that then shows up in fetchMessages, once the prior reply has completed', async () => {
-    const api = createChatApi(authorizedFetch);
+    const api = createChatApi(sessionFetch);
     const chat = await api.createChat('seed chat for postMessage test');
 
     const [pendingReply] = (await api.fetchMessages(chat.id)).filter(m => m.role === 'assistant');
@@ -58,7 +58,7 @@ describe('chatService', () => {
   }, 30000);
 
   it('deleteChat removes the chat - its messages 404 afterwards', async () => {
-    const api = createChatApi(authorizedFetch);
+    const api = createChatApi(sessionFetch);
     const chat = await api.createChat('chat to delete');
 
     await api.deleteChat(chat.id);
@@ -75,7 +75,7 @@ describe('chatService', () => {
   });
 
   it('a request against a chat id that never existed throws an HttpError', async () => {
-    const api = createChatApi(authorizedFetch);
+    const api = createChatApi(sessionFetch);
 
     let error: unknown;
     try {
