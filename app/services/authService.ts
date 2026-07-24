@@ -1,15 +1,11 @@
-export class HttpError extends Error {
-  constructor(public status: number, message = `Request failed with status ${status}`) {
-    super(message);
-  }
-}
+import { httpError } from './httpError';
 
 export async function createAnonymousSession(baseUrl: string): Promise<string> {
   const res = await fetch(`${baseUrl}/auth/anonymous-session`, {
     method: 'POST',
     credentials: 'include',
   });
-  if (!res.ok) throw new HttpError(res.status, `Failed to create anonymous session: ${res.status}`);
+  if (!res.ok) throw await httpError(res, `Failed to create anonymous session: ${res.status}`);
   const data = await res.json() as { access_token: string };
   return data.access_token;
 }
@@ -23,7 +19,7 @@ export async function refreshAccessToken(baseUrl: string, init: RequestInit = {}
     credentials: 'include',
     ...init,
   });
-  if (!res.ok) throw new HttpError(res.status, `Failed to refresh access token: ${res.status}`);
+  if (!res.ok) throw await httpError(res, `Failed to refresh access token: ${res.status}`);
   const data = await res.json() as { access_token: string };
   return data.access_token;
 }

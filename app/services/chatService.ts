@@ -1,4 +1,5 @@
 import type { Chat, Message } from '../types/chat';
+import { httpError, parseJson } from './httpError';
 
 /**
  * Transport layer for the chat backend. Every function returns domain objects
@@ -9,17 +10,6 @@ import type { Chat, Message } from '../types/chat';
 
 /** Shape `useSession`'s sessionFetch fulfills - the one way this layer reaches the backend. */
 export type SessionFetch = (path: string, init?: RequestInit) => Promise<Response>;
-
-export class HttpError extends Error {
-  constructor(public status: number) {
-    super(`Request failed with status ${status}`);
-  }
-}
-
-async function parseJson<T>(res: Response): Promise<T> {
-  if (!res.ok) throw new HttpError(res.status);
-  return res.json();
-}
 
 type RawMessage = {
   id: string;
@@ -180,7 +170,7 @@ export function createChatApi(sessionFetch: SessionFetch) {
 
     async deleteChat(chatId: string): Promise<void> {
       const res = await sessionFetch(`/chats/${chatId}`, { method: 'DELETE' });
-      if (!res.ok) throw new HttpError(res.status);
+      if (!res.ok) throw await httpError(res);
     },
 
     openStream(chatId: string, messageId: string, signal: AbortSignal): Promise<Response> {

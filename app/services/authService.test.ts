@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { HttpError, createAnonymousSession, refreshAccessToken } from './authService';
-
-const BASE_URL = process.env.BACKEND_URL ?? 'http://localhost:8000/api';
+import { createAnonymousSession, refreshAccessToken } from './authService';
+import { HttpError } from './httpError';
+import { BASE_URL } from './testUtils';
 
 describe('authService', () => {
-  it('createAnonymousSession returns a usable access token', async () => {
+  it('createAnonymousSession returns a token that authenticates a protected endpoint', async () => {
     const token = await createAnonymousSession(BASE_URL);
 
-    expect(typeof token).toBe('string');
-    expect(token.length).toBeGreaterThan(0);
+    const res = await fetch(`${BASE_URL}/chats?limit=1`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    expect(res.status).toBe(200);
   });
 
   it('createAnonymousSession throws an HttpError carrying the real HTTP status when the request is not successful', async () => {
@@ -33,6 +36,8 @@ describe('authService', () => {
 
     expect(error).toBeInstanceOf(HttpError);
     expect((error as HttpError).status).toBe(401);
+    // Auth failures use `{"detail": ...}`, not the `{"error": code}`
+    expect((error as HttpError).code).toBeUndefined();
   });
 
   it('refreshAccessToken returns a new access token when a valid refresh cookie is presented', async () => {

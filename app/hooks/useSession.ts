@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Dispatch } from 'react';
-import { createAnonymousSession, refreshAccessToken, HttpError } from '../services/authService';
+import { createAnonymousSession, refreshAccessToken } from '../services/authService';
+import { HttpError } from '../services/httpError';
 import type { AppAction } from './chat/appState';
 import type { SessionFetch } from '../services/chatService';
 

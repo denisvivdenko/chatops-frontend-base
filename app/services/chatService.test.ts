@@ -1,18 +1,12 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { createAnonymousSession } from './authService';
-import { createChatApi, HttpError, type SessionFetch } from './chatService';
-
-const BASE_URL = process.env.BACKEND_URL ?? 'http://localhost:8000/api';
+import { createChatApi, type SessionFetch } from './chatService';
+import { HttpError } from './httpError';
+import { createSessionFetch, drainReply } from './testUtils';
 
 let sessionFetch: SessionFetch;
 
 beforeAll(async () => {
-  const token = await createAnonymousSession(BASE_URL);
-  sessionFetch = (path, init = {}) => {
-    const headers = new Headers(init.headers);
-    headers.set('Authorization', `Bearer ${token}`);
-    return fetch(`${BASE_URL}${path}`, { ...init, headers });
-  };
+  sessionFetch = await createSessionFetch();
 });
 
 describe('chatService', () => {
@@ -21,9 +15,26 @@ describe('chatService', () => {
 
     const chat = await api.createChat('hello from chatService test');
     expect(chat.id).toBeTruthy();
+    expect(chat.title).toBe('hello from chatService test');
+    expect(Number.isFinite(chat.createdAt)).toBe(true);
+    expect(Number.isFinite(chat.lastActivityAt)).toBe(true);
 
     const chats = await api.fetchChats();
     expect(chats.some(c => c.id === chat.id)).toBe(true);
+  });
+
+  it('createChat seeds a complete user message and a pending assistant reply', async () => {
+    const api = createChatApi(sessionFetch);
+
+    const chat = await api.createChat('seed chat for message-shape test');
+
+    const [user, assistant] = await api.fetchMessages(chat.id);
+    expect(user.role).toBe('user');
+    expect(user.status).toBe('complete');
+    expect(user.content).toBe('seed chat for message-shape test');
+    expect(Number.isFinite(user.createdAt)).toBe(true);
+    expect(assistant.role).toBe('assistant');
+    expect(Number.isFinite(assistant.createdAt)).toBe(true);
   });
 
   it('postMessage while the first reply is still pending is rejected with 409', async () => {
@@ -39,22 +50,27 @@ describe('chatService', () => {
 
     expect(error).toBeInstanceOf(HttpError);
     expect((error as HttpError).status).toBe(409);
+    expect((error as HttpError).code).toBe('last_assistant_message_not_finished');
   });
 
-  it('postMessage adds a message that then shows up in fetchMessages, once the prior reply has completed', async () => {
+  it('postMessage returns the new pending assistant reply, once the prior one has completed', async () => {
     const api = createChatApi(sessionFetch);
     const chat = await api.createChat('seed chat for postMessage test');
-
-    const [pendingReply] = (await api.fetchMessages(chat.id)).filter(m => m.role === 'assistant');
-    const streamRes = await api.openStream(chat.id, pendingReply.id, new AbortController().signal);
-    await api.readTokenStream(streamRes, () => {});
+    await drainReply(api, chat.id);
 
     const message = await api.postMessage(chat.id, 'a follow-up message');
+
+    // The user message is persisted but not returned - only the assistant reply is (api.md §3.5).
     expect(message.role).toBe('assistant');
-    expect(['pending', 'complete']).toContain(message.status);
+    expect(message.status).toBe('pending');
+    expect(message.content).toBe('');
+    expect(Number.isFinite(message.createdAt)).toBe(true);
 
     const messages = await api.fetchMessages(chat.id);
     expect(messages.some(m => m.id === message.id)).toBe(true);
+    const sent = messages.find(m => m.content === 'a follow-up message');
+    expect(sent?.role).toBe('user');
+    expect(sent?.status).toBe('complete');
   }, 30000);
 
   it('deleteChat removes the chat - its messages 404 afterwards', async () => {
@@ -72,19 +88,6 @@ describe('chatService', () => {
 
     expect(error).toBeInstanceOf(HttpError);
     expect((error as HttpError).status).toBe(404);
-  });
-
-  it('a request against a chat id that never existed throws an HttpError', async () => {
-    const api = createChatApi(sessionFetch);
-
-    let error: unknown;
-    try {
-      await api.fetchMessages('does-not-exist');
-    } catch (err) {
-      error = err;
-    }
-
-    expect(error).toBeInstanceOf(HttpError);
-    expect((error as HttpError).status).toBe(404);
+    expect((error as HttpError).code).toBe('chat_not_found');
   });
 });

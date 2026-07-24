@@ -1,4 +1,5 @@
-import { HttpError, type SessionFetch } from './chatService';
+import type { SessionFetch } from './chatService';
+import { parseJson } from './httpError';
 
 /**
  * Transport layer for the document library (Phase A - upload only). Sibling to
@@ -8,11 +9,6 @@ import { HttpError, type SessionFetch } from './chatService';
 type RawResource = { id: string; filename: string };
 
 export type ResourceSummary = { id: string; filename: string };
-
-async function parseJson<T>(res: Response): Promise<T> {
-  if (!res.ok) throw new HttpError(res.status);
-  return res.json();
-}
 
 function mapResource(raw: RawResource): ResourceSummary {
   return { id: raw.id, filename: raw.filename };
