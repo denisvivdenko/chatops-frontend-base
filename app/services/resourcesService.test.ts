@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { beforeAll, describe, expect, it } from 'vitest';
-import type { SessionFetch } from './chatService';
-import { HttpError } from './httpError';
+import type { SessionFetch } from './http';
+import { HttpError } from './http';
 import { createResourcesApi } from './resourcesService';
 import { createSessionFetch } from './testUtils';
 

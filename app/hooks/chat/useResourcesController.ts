@@ -4,7 +4,7 @@ import { useCallback, useMemo, useRef } from 'react';
 import type { Dispatch } from 'react';
 import type { AppAction } from './appState';
 import { createResourcesApi } from '../../services/resourcesService';
-import type { SessionFetch } from '../../services/chatService';
+import type { SessionFetch } from '../../services/http';
 
 const UPLOAD_TIMEOUT_MS = 60_000;
 

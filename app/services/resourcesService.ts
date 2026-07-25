@@ -1,5 +1,5 @@
-import type { SessionFetch } from './chatService';
-import { parseJson } from './httpError';
+import type { SessionFetch } from './http';
+import { parseJson } from './http';
 
 /**
  * Transport layer for the document library (Phase A - upload only). Sibling to

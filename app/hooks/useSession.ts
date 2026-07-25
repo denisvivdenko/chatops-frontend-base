@@ -4,9 +4,9 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Dispatch } from 'react';
 import { createAnonymousSession, refreshAccessToken } from '../services/authService';
-import { HttpError } from '../services/httpError';
+import { HttpError } from '../services/http';
 import type { AppAction } from './chat/appState';
-import type { SessionFetch } from '../services/chatService';
+import type { SessionFetch } from '../services/http';
 
 const ACCESS_TOKEN_STORAGE_KEY = 'chatops.accessToken';
 

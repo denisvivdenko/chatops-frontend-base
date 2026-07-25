@@ -1,5 +1,6 @@
 import { createAnonymousSession } from './authService';
-import type { ChatApi, SessionFetch } from './chatService';
+import type { ChatApi } from './chatService';
+import { HttpError, type SessionFetch } from './http';
 
 export const BASE_URL = process.env.BACKEND_URL ?? 'http://localhost:8000/api';
 
@@ -17,14 +18,25 @@ export async function createSessionFetch(): Promise<SessionFetch> {
 }
 
 /**
+ * Awaits a call expected to fail and hands back its `HttpError`, so tests can assert
+ * on status and code directly. Fails loudly if the call succeeds or throws something
+ * else, rather than leaving assertions to run against an undefined error.
+ */
+export async function catchHttpError(call: Promise<unknown>): Promise<HttpError> {
+  try {
+    await call;
+  } catch (err) {
+    if (err instanceof HttpError) return err;
+    throw err;
+  }
+  throw new Error('Expected the request to fail, but it succeeded.');
+}
+
+/**
  * Waits out the chat's pending assistant reply by streaming it to completion.
  * Sending a follow-up message is a 409 until this has happened (api.md §3.5).
  */
-export async function drainReply(api: ChatApi, chatId: string): Promise<void> {
-  const messages = await api.fetchMessages(chatId);
-  const pending = [...messages].reverse().find(m => m.role === 'assistant' && m.status === 'pending');
-  if (!pending) return;
-
-  const res = await api.openStream(chatId, pending.id, new AbortController().signal);
+export async function drainReply(messageId: string, chatId: string, api: ChatApi): Promise<void> {
+  const res = await api.openStream(chatId, messageId, new AbortController().signal);
   await api.readTokenStream(res, () => {});
 }

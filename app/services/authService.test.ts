@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createAnonymousSession, refreshAccessToken } from './authService';
-import { HttpError } from './httpError';
+import { HttpError } from './http';
 import { BASE_URL } from './testUtils';
 
 describe('authService', () => {

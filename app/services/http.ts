@@ -1,11 +1,16 @@
 /**
- * The shared HTTP-failure vocabulary for the service layer. The backend runs two
- * error conventions (api.md §6): business-rule failures carry
+ * What every service in this layer needs to talk to the backend: the transport seam
+ * it calls through, and the error it raises when a response comes back non-ok.
+ *
+ * The backend runs two error conventions (api.md §6): business-rule failures carry
  * `{"error": "<snake_case_code>"}`, while auth failures and FastAPI validation errors
  * use `{"detail": ...}` and carry no code at all. `code` is therefore best-effort -
  * reliably present for the former, absent for the latter - so callers should branch
  * on it only where it adds something `status` alone can't say.
  */
+
+/** Shape `useSession`'s sessionFetch fulfills - the one way this layer reaches the backend. */
+export type SessionFetch = (path: string, init?: RequestInit) => Promise<Response>;
 
 export type ErrorCode =
   | 'forbidden'

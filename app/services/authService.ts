@@ -1,4 +1,4 @@
-import { httpError } from './httpError';
+import { httpError } from './http';
 
 export async function createAnonymousSession(baseUrl: string): Promise<string> {
   const res = await fetch(`${baseUrl}/auth/anonymous-session`, {

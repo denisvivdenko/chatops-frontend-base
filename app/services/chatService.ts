@@ -1,5 +1,5 @@
 import type { Chat, Message } from '../types/chat';
-import { httpError, parseJson } from './httpError';
+import { httpError, parseJson, type SessionFetch } from './http';
 
 /**
  * Transport layer for the chat backend. Every function returns domain objects
@@ -7,9 +7,6 @@ import { httpError, parseJson } from './httpError';
  * never touches the reducer, the router, or React. Orchestration (deciding what
  * a failure means and what state should change) is the caller's job.
  */
-
-/** Shape `useSession`'s sessionFetch fulfills - the one way this layer reaches the backend. */
-export type SessionFetch = (path: string, init?: RequestInit) => Promise<Response>;
 
 type RawMessage = {
   id: string;
