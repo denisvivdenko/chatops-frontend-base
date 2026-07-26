@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
-import ChatProvider from "@/app/context/ChatProvider";
+import { Providers } from './providers';
 import AppShell from "@/app/components/layout/AppShell/AppShell";
 import "./globals.css";
 
@@ -21,17 +21,15 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({
-  children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const backendUrl = process.env.BACKEND_URL ?? "http://localhost:8000";
   return (
     <html className={inter.className}>
       <body>
-        <ChatProvider backendUrl={backendUrl}>
+        <Providers>
           <AppShell />
-        </ChatProvider>
+        </Providers>
       </body>
     </html>
   );

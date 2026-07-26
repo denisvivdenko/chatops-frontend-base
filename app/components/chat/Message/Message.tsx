@@ -5,9 +5,9 @@ import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import { FileText, Pencil, RotateCw } from 'lucide-react';
 import type { Message } from '../../../types/chat';
 import MessageInput from '../MessageInput/MessageInput';
-import Spinner from '../../feedback/Spinner/Spinner';
-import { useChatActions } from '../../../context/chatContext';
-import { DOCUMENT_LINK_SCHEME, isDocumentOnlyContent } from '../../../hooks/chat/documentLink';
+import Spinner from '../../shared/Spinner/Spinner';
+import { useActiveChatActions } from '../../../context/ActiveChatContext';
+import { DOCUMENT_LINK_SCHEME, isDocumentOnlyContent } from '../../../utils/documentLink';
 import styles from './Message.module.css';
 
 type MessageProps = {
@@ -57,7 +57,7 @@ const MarkdownContent = memo(function MarkdownContent({ content }: { content: st
 });
 
 function Message({ message, editDisabled }: MessageProps) {
-  const { retryMessage, modifyMessage } = useChatActions();
+  const { retryMessage, modifyMessage } = useActiveChatActions();
   const [isEditing, setIsEditing] = useState(false);
 
   if (message.role === 'user') {
@@ -82,7 +82,7 @@ function Message({ message, editDisabled }: MessageProps) {
     return (
       <div className={styles.userWrapper}>
         <div className={styles.userGroup}>
-          {modifyMessage && !isDocumentOnlyContent(message.content) && (
+          {!isDocumentOnlyContent(message.content) && (
             <button
               className={styles.editButton}
               onClick={() => setIsEditing(true)}

@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { ArrowUp, FileText, FileWarning, Plus, RotateCw, X } from 'lucide-react';
-import Spinner from '../../feedback/Spinner/Spinner';
-import { useChatActions, useMessages, useResources } from '../../../context/chatContext';
-import { buildDocumentLinkMarkdown } from '../../../hooks/chat/documentLink';
-import type { ResourceItem } from '../../../hooks/chat/appState';
+import Spinner from '../../shared/Spinner/Spinner';
+import { useResources, ResourceItem } from '../../../context/ResourcesContext';
+import { useMessages, useActiveChatActions } from '../../../context/ActiveChatContext';
+import { buildDocumentLinkMarkdown } from '../../../utils/documentLink';
 import styles from './DocumentsModal.module.css';
 
 const ACCEPTED_TYPE = 'application/pdf';
@@ -24,7 +24,7 @@ type Props = {
 export default function DocumentsModal({ onCloseAction }: Props) {
   const { items, ensureLoaded, uploadResource, cancelUpload, retryUpload, removeResource } = useResources();
   const { messages } = useMessages();
-  const { sendMessage } = useChatActions();
+  const { sendMessage } = useActiveChatActions();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [validationError, setValidationError] = useState<string | null>(null);
   const [pendingReplacement, setPendingReplacement] = useState<{ file: File; existingId: string } | null>(null);

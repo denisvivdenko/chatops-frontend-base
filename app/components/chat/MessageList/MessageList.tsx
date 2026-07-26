@@ -2,7 +2,7 @@
 
 import { Virtuoso } from 'react-virtuoso';
 import MessageComponent from '../Message/Message';
-import { useMessages } from '../../../context/chatContext';
+import { useMessages } from '../../../context/ActiveChatContext';
 import styles from './MessageList.module.css';
 
 const Header = () => <div className={styles.spacerTop} />;

@@ -24,27 +24,29 @@ export type AuthApi = Awaited<ReturnType<typeof createAuthApi>>;
 
 export async function createAuthApi(
   baseUrl: string,
-  login: string | null,
-  password: string | null,
   initToken: string | null,
   onTokenUpdate: (token: string) => void,
+  onRefreshTokenError: () => void
 ) {
-  let token: string;
+  let token: string | null = initToken;
 
   function setToken(newToken: string): void {
     token = newToken;
     onTokenUpdate(newToken);
   }
 
-  async function authenticate(login: string | null, password: string | null): Promise<string> {
-    if (login === null || password === null) {
-      return createAnonymousSession(baseUrl);
-    }
+  async function loginAsAnonymousUser() {
+    setToken(await createAnonymousSession(baseUrl));
+  }
+
+  async function login(login: string | null, password: string | null): Promise<string> {
+    if (login === null || password === null) throw new Error('Login or password is null.')
     throw new Error('Not implemented auth service with login and password.');
   }
 
-  if (initToken) token = initToken;
-  else setToken(await authenticate(login, password));
+  async function logout(): Promise<void> {
+    setToken('');
+  }
 
   async function request(path: string, init: RequestInit = {}): Promise<Response> {
     async function withAuth() {
@@ -60,15 +62,10 @@ export async function createAuthApi(
       setToken(await refreshAccessToken(baseUrl));
     } catch (err) {
       if (!(err instanceof UnauthorizedError)) throw err;
-      setToken(await authenticate(login, password));
+      onRefreshTokenError();
     }
     return withAuth();
   }
 
-  return {
-    request,
-    async logout(): Promise<void> {
-      setToken(await authenticate(login, password));
-    },
-  };
+  return { request, login, loginAsAnonymousUser, logout };
 }

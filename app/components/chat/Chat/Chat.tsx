@@ -2,13 +2,13 @@
 
 import MessageList from '../MessageList/MessageList';
 import MessageInput from '../MessageInput/MessageInput';
-import Spinner from '../../feedback/Spinner/Spinner';
-import { useMessages, useChatActions } from '../../../context/chatContext';
-import styles from './ChatPane.module.css';
+import Spinner from '../../shared/Spinner/Spinner';
+import { useActiveChatActions, useMessages } from '../../../context/ActiveChatContext';
+import styles from './Chat.module.css';
 
-export default function ChatPane() {
+export default function Chat() {
   const { messages, isLoading } = useMessages();
-  const { sendMessage } = useChatActions();
+  const { sendMessage } = useActiveChatActions();
 
   const lastMessage = messages[messages.length - 1];
   const lastMessageUnresolved = lastMessage?.status === 'pending' || lastMessage?.status === 'failed';
