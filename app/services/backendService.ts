@@ -1,12 +1,6 @@
 import type { Chat, Message } from '../types/chat';
-import { httpError, parseJson, type SessionFetch } from './http';
-
-/**
- * Transport layer for the chat backend. Every function returns domain objects
- * (or emits raw stream tokens) and throws `HttpError` on a non-ok response — it
- * never touches the reducer, the router, or React. Orchestration (deciding what
- * a failure means and what state should change) is the caller's job.
- */
+import type { AuthRequest } from './authService';
+import { ensureOk, parseJson } from './errors';
 
 type RawMessage = {
   id: string;
@@ -22,6 +16,10 @@ type RawChat = {
   last_activity_at: number;
   created_at: number;
 };
+
+type RawResource = { id: string; filename: string };
+
+export type ResourceSummary = { id: string; filename: string };
 
 function mapMessage(raw: RawMessage): Message {
   return {
@@ -42,17 +40,12 @@ function mapChat(raw: RawChat): Chat {
   };
 }
 
+function mapResource(raw: RawResource): ResourceSummary {
+  return { id: raw.id, filename: raw.filename };
+}
+
 export type StreamOutcome = { status: 'complete' } | { status: 'failed'; reason?: string };
 
-/**
- * Reads an SSE body (fetch doesn't give us EventSource's framing for free) and emits tokens,
- * resolving with the terminal `done` event's payload once the backend sends one (or `null` if
- * the stream ended without one — a dropped connection, say). Tokens are coalesced and flushed
- * at most once per animation frame, so a fast stream drives ~60 re-renders/sec of the reply
- * instead of one per token — the difference is invisible to the reader but keeps the render
- * loop cheap. Buffered tokens are flushed before the `done` event is recorded, so the caller
- * never sees a "complete" outcome paired with incomplete content.
- */
 async function readTokenStream(response: Response, onToken: (chunk: string) => void): Promise<StreamOutcome | null> {
   if (!response.body) return null;
   const reader = response.body.getReader();
@@ -98,10 +91,6 @@ async function readTokenStream(response: Response, onToken: (chunk: string) => v
           outcome = JSON.parse(data) as StreamOutcome;
           continue;
         }
-
-        // Backend is still preparing the reply (e.g. parsing an attached document) and has
-        // no token yet - keeps the connection alive without anything for the caller to do.
-        // The UI infers "still preparing" from empty content, so no callback is needed here.
         if (eventType === 'loading') continue;
 
         const { token } = JSON.parse(data) as { seq_id: number; token: string };
@@ -115,24 +104,33 @@ async function readTokenStream(response: Response, onToken: (chunk: string) => v
   }
 }
 
-export type ChatApi = ReturnType<typeof createChatApi>;
+export type BackendApi = ReturnType<typeof createBackendApi>;
 
-export function createChatApi(sessionFetch: SessionFetch) {
+export function createBackendApi(request: AuthRequest) {
+  async function openStream(chatId: string, messageId: string, signal: AbortSignal): Promise<Response> {
+    const res = await request(
+      `/chats/${chatId}/messages/${messageId}/stream`,
+      { signal, headers: { Accept: 'text/event-stream' } },
+    );
+    await ensureOk(res);
+    return res;
+  }
+
   return {
     async fetchChats(): Promise<Chat[]> {
-      const res = await sessionFetch('/chats?limit=50');
+      const res = await request('/chats?limit=50');
       const data = await parseJson<RawChat[]>(res);
       return data.map(mapChat);
     },
 
     async fetchMessages(chatId: string): Promise<Message[]> {
-      const res = await sessionFetch(`/chats/${chatId}/messages`);
+      const res = await request(`/chats/${chatId}/messages`);
       const data = await parseJson<RawMessage[]>(res);
       return data.map(mapMessage);
     },
 
     async createChat(message: string): Promise<Chat> {
-      const res = await sessionFetch('/chats', {
+      const res = await request('/chats', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message }),
@@ -141,7 +139,7 @@ export function createChatApi(sessionFetch: SessionFetch) {
     },
 
     async postMessage(chatId: string, content: string): Promise<Message> {
-      const res = await sessionFetch(`/chats/${chatId}/messages`, {
+      const res = await request(`/chats/${chatId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content }),
@@ -150,14 +148,14 @@ export function createChatApi(sessionFetch: SessionFetch) {
     },
 
     async retryMessage(chatId: string, messageId: string): Promise<Message> {
-      const res = await sessionFetch(`/chats/${chatId}/messages/${messageId}/retry`, {
+      const res = await request(`/chats/${chatId}/messages/${messageId}/retry`, {
         method: 'POST',
       });
       return mapMessage(await parseJson<RawMessage>(res));
     },
 
     async modifyMessage(chatId: string, messageId: string, content: string): Promise<Message> {
-      const res = await sessionFetch(`/chats/${chatId}/messages/${messageId}/modify`, {
+      const res = await request(`/chats/${chatId}/messages/${messageId}/modify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content }),
@@ -166,17 +164,26 @@ export function createChatApi(sessionFetch: SessionFetch) {
     },
 
     async deleteChat(chatId: string): Promise<void> {
-      const res = await sessionFetch(`/chats/${chatId}`, { method: 'DELETE' });
-      if (!res.ok) throw await httpError(res);
+      const res = await request(`/chats/${chatId}`, { method: 'DELETE' });
+      await ensureOk(res);
     },
 
-    openStream(chatId: string, messageId: string, signal: AbortSignal): Promise<Response> {
-      return sessionFetch(
-        `/chats/${chatId}/messages/${messageId}/stream`,
-        { signal, headers: { Accept: 'text/event-stream' } },
-      );
+    async streamMessage(chatId: string, messageId: string, signal: AbortSignal, onToken: (token: string) => void): Promise<void> {
+      const stream = await openStream(chatId, messageId, signal);
+      await readTokenStream(stream, onToken)
     },
 
-    readTokenStream,
+    async listResources(): Promise<ResourceSummary[]> {
+      const res = await request('/resources');
+      const data = await parseJson<RawResource[]>(res);
+      return data.map(mapResource);
+    },
+
+    async uploadResource(file: File, signal: AbortSignal): Promise<ResourceSummary> {
+      const body = new FormData();
+      body.append('file', file);
+      const res = await request('/upload-resource', { method: 'POST', body, signal });
+      return mapResource(await parseJson<RawResource>(res));
+    },
   };
 }

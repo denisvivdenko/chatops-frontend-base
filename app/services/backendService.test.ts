@@ -1,18 +1,17 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { createChatApi } from './chatService';
-import { type SessionFetch } from './http';
-import { createSessionFetch } from './testUtils';
+import { BackendApi, createBackendApi } from './backendService';
+import { createAuthApi } from './authService';
 
-let sessionFetch: SessionFetch;
+let api: BackendApi;
 
 beforeAll(async () => {
-  sessionFetch = await createSessionFetch();
+  const authService = await createAuthApi("http://localhost:8000/api", null, null, null, () => {});
+  api = await createBackendApi(authService.request);
 });
 
-describe('chatService', () => {
+describe('backendService chat', () => {
   it('Flow: create chat, stream message, send message, fetch messages', async () => {
-    const api = createChatApi(sessionFetch);
-    const firstMessage = 'hello from chatService test';
+    const firstMessage = 'hello from backendService test';
     const followUpMessage = 'a follow-up message';
 
     const chat = await api.createChat(firstMessage);
@@ -21,15 +20,13 @@ describe('chatService', () => {
     const assistant = messages[1];
 
     let streamedMessage = '';
-    const stream = await api.openStream(chat.id, assistant.id, new AbortController().signal);
-    await api.readTokenStream(stream, (chunk) => {
+    await api.streamMessage(chat.id, assistant.id, new AbortController().signal, (chunk) => {
       streamedMessage += chunk;
     });
 
     const secondAssistant = await api.postMessage(chat.id, followUpMessage);
     let streamedSecondMessage = '';
-    const secondStream = await api.openStream(chat.id, secondAssistant.id, new AbortController().signal);
-    await api.readTokenStream(secondStream, (chunk) => {
+    await api.streamMessage(chat.id, secondAssistant.id, new AbortController().signal, (chunk) => {
       streamedSecondMessage += chunk;
     });
 
