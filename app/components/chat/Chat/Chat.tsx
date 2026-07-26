@@ -4,14 +4,24 @@ import MessageList from '../MessageList/MessageList';
 import MessageInput from '../MessageInput/MessageInput';
 import Spinner from '../../shared/Spinner/Spinner';
 import { useActiveChatActions, useMessages } from '../../../context/ActiveChatContext';
+import { useChatActions, useChats } from '../../../context/ChatContext';
 import styles from './Chat.module.css';
 
 export default function Chat() {
   const { messages, isLoading } = useMessages();
+  const { createChat } = useChatActions();
+  const { activeChatId } = useChats();
   const { sendMessage } = useActiveChatActions();
 
   const lastMessage = messages[messages.length - 1];
   const lastMessageUnresolved = lastMessage?.status === 'pending' || lastMessage?.status === 'failed';
+
+  const handleSend = (content: string) => {
+    if (activeChatId) {
+      return sendMessage(content);
+    }
+    return createChat(content);
+  };
 
   return (
     <div className={styles.pane}>
@@ -25,7 +35,7 @@ export default function Chat() {
         )}
       </div>
       <div className={styles.inputBar}>
-        <MessageInput onSendAction={sendMessage} disableSend={lastMessageUnresolved} />
+        <MessageInput onSendAction={handleSend} disableSend={lastMessageUnresolved} />
       </div>
     </div>
   );
