@@ -6,6 +6,7 @@ import type { Message } from '../types/chat';
 import { useBackendApi } from '../hooks/useBackendApi';
 import { useChats } from './ChatContext';
 import { useErrorReporter } from './ErrorContext';
+import { NotFoundError, AccessDeniedError } from '../services/errors';
 
 interface MessagesState {
   messages: Message[];
@@ -49,11 +50,23 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
   const abortRef = useRef<AbortController | null>(null);
   const streamingIdRef = useRef<string | null>(null);
 
-  const { data: messages = [], isLoading } = useQuery({
+  const { data: messages = [], isLoading, isError, error } = useQuery({
     queryKey: activeChatId ? messagesQueryKey(activeChatId) : ['messages', 'none'],
     queryFn: () => backendApi.fetchMessages(activeChatId as string),
     enabled: activeChatId !== null,
+    retry: false,
   });
+
+  // Chats vanish (deleted) or belong to someone else, so a 404/403 here is expected
+  // user-facing input, not a transient failure worth retrying.
+  useEffect(() => {
+    if (!isError) return;
+    if (error instanceof NotFoundError || error instanceof AccessDeniedError) {
+      reportError("This chat doesn't exist or you don't have access to it.");
+    } else {
+      reportError('Failed to load chat', (error as Error).message);
+    }
+  }, [isError, error, reportError]);
 
   function setMessages(chatId: string, update: (prev: Message[]) => Message[]) {
     queryClient.setQueryData<Message[]>(messagesQueryKey(chatId), (prev = []) => update(prev));
