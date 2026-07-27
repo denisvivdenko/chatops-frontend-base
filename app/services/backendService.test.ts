@@ -6,6 +6,7 @@ let api: BackendApi;
 
 beforeAll(async () => {
   const authService = await createAuthApi("http://localhost:8000/api", null, () => {}, () => {});
+  await authService.loginAsAnonymousUser();
   api = await createBackendApi(authService.request);
 });
 
