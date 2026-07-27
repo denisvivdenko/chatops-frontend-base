@@ -91,6 +91,12 @@ async function readTokenStream(response: Response, onToken: (chunk: string) => v
           outcome = JSON.parse(data) as StreamOutcome;
           continue;
         }
+        if (eventType === 'error') {
+          flush();
+          const { error } = JSON.parse(data) as { error: string };
+          outcome = { status: 'failed', reason: error };
+          continue;
+        }
         if (eventType === 'loading') continue;
 
         const { token } = JSON.parse(data) as { seq_id: number; token: string };
@@ -168,9 +174,9 @@ export function createBackendApi(request: AuthRequest) {
       await ensureOk(res);
     },
 
-    async streamMessage(chatId: string, messageId: string, signal: AbortSignal, onToken: (token: string) => void): Promise<void> {
+    async streamMessage(chatId: string, messageId: string, signal: AbortSignal, onToken: (token: string) => void): Promise<StreamOutcome | null> {
       const stream = await openStream(chatId, messageId, signal);
-      await readTokenStream(stream, onToken)
+      return readTokenStream(stream, onToken);
     },
 
     async listResources(): Promise<ResourceSummary[]> {

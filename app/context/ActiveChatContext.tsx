@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useMemo, useRef, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, ReactNode } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Message } from '../types/chat';
 import { useBackendApi } from '../hooks/useBackendApi';
@@ -25,6 +25,20 @@ const ActiveChatActionsContext = createContext<ActiveChatActions | undefined>(un
 
 const messagesQueryKey = (chatId: string) => ['messages', chatId] as const;
 
+// The backend replays a stream from its first token, so a connection that drops before any
+// terminal event can be resumed by reopening and rebuilding the content from scratch.
+const MAX_STREAM_ATTEMPTS = 3;
+
+function optimisticUserMessage(content: string): Message {
+  return {
+    id: `local-${Date.now()}`,
+    role: 'user',
+    status: 'complete',
+    content,
+    createdAt: Date.now(),
+  };
+}
+
 // ---------- Provider ----------
 
 export function ActiveChatProvider({ children }: { children: ReactNode }) {
@@ -33,6 +47,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
   const { reportError } = useErrorReporter();
   const queryClient = useQueryClient();
   const abortRef = useRef<AbortController | null>(null);
+  const streamingIdRef = useRef<string | null>(null);
 
   const { data: messages = [], isLoading } = useQuery({
     queryKey: activeChatId ? messagesQueryKey(activeChatId) : ['messages', 'none'],
@@ -40,48 +55,87 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
     enabled: activeChatId !== null,
   });
 
-  function updateMessage(chatId: string, messageId: string, patch: Partial<Message>) {
-    queryClient.setQueryData<Message[]>(messagesQueryKey(chatId), (prev = []) =>
-      prev.map((m) => (m.id === messageId ? { ...m, ...patch } : m))
-    );
+  function setMessages(chatId: string, update: (prev: Message[]) => Message[]) {
+    queryClient.setQueryData<Message[]>(messagesQueryKey(chatId), (prev = []) => update(prev));
   }
 
-  async function streamAndSync(chatId: string, message: Message) {
+  function updateMessage(chatId: string, messageId: string, patch: Partial<Message>) {
+    setMessages(chatId, (prev) => prev.map((m) => (m.id === messageId ? { ...m, ...patch } : m)));
+  }
+
+  async function streamAndSync(chatId: string, messageId: string) {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
-
-    updateMessage(chatId, message.id, { status: 'pending', content: '' });
+    streamingIdRef.current = messageId;
 
     try {
-      await backendApi.streamMessage(chatId, message.id, controller.signal, (token) => {
-        queryClient.setQueryData<Message[]>(messagesQueryKey(chatId), (prev = []) =>
-          prev.map((m) =>
-            m.id === message.id ? { ...m, content: m.content + token } : m
-          )
-        );
-      });
-      updateMessage(chatId, message.id, { status: 'complete' });
+      for (let attempt = 1; attempt <= MAX_STREAM_ATTEMPTS; attempt++) {
+        updateMessage(chatId, messageId, { status: 'pending', content: '' });
+
+        const outcome = await backendApi.streamMessage(chatId, messageId, controller.signal, (token) => {
+          setMessages(chatId, (prev) =>
+            prev.map((m) => (m.id === messageId ? { ...m, content: m.content + token } : m))
+          );
+        });
+
+        if (outcome?.status === 'complete') {
+          updateMessage(chatId, messageId, { status: 'complete' });
+          return;
+        }
+        if (outcome?.status === 'failed') {
+          updateMessage(chatId, messageId, { status: 'failed' });
+          reportError('Message failed to generate', outcome.reason ?? 'The reply could not be generated.');
+          return;
+        }
+      }
+
+      updateMessage(chatId, messageId, { status: 'failed' });
+      reportError('Message failed to stream', 'The connection dropped before the reply finished.');
     } catch (err) {
-      updateMessage(chatId, message.id, { status: 'failed' });
+      if (controller.signal.aborted) return;
+      updateMessage(chatId, messageId, { status: 'failed' });
       reportError('Message failed to stream', (err as Error).message);
+    } finally {
+      if (streamingIdRef.current === messageId) streamingIdRef.current = null;
     }
   }
+
+  const lastMessage = messages[messages.length - 1];
+  const pendingAssistantId =
+    lastMessage?.role === 'assistant' && lastMessage.status === 'pending' ? lastMessage.id : null;
+
+  // Every path that produces a reply — creating a chat, sending, retrying, modifying, or just
+  // opening a chat whose reply is still being generated — ends with a pending assistant message
+  // at the tail of the list, so attaching the stream here covers all of them at once.
+  useEffect(() => {
+    if (!activeChatId || !pendingAssistantId) return;
+    if (streamingIdRef.current === pendingAssistantId) return;
+    streamAndSync(activeChatId, pendingAssistantId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeChatId, pendingAssistantId]);
+
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   const sendMutation = useMutation({
     mutationFn: async (content: string) => {
       if (!activeChatId) throw new Error('No active chat');
       return backendApi.postMessage(activeChatId, content);
     },
-    onSuccess: (newMessage) => {
+    onMutate: (content: string) => {
       if (!activeChatId) return;
-      queryClient.setQueryData<Message[]>(messagesQueryKey(activeChatId), (prev = []) => [
-        ...prev,
-        newMessage,
-      ]);
-      streamAndSync(activeChatId, newMessage);
+      const optimistic = optimisticUserMessage(content);
+      setMessages(activeChatId, (prev) => [...prev, optimistic]);
+      return { chatId: activeChatId, optimisticId: optimistic.id };
     },
-    onError: (err) => {
+    onSuccess: (assistantMessage, _content, context) => {
+      if (!context) return;
+      setMessages(context.chatId, (prev) => [...prev, assistantMessage]);
+    },
+    onError: (err, _content, context) => {
+      if (context) {
+        setMessages(context.chatId, (prev) => prev.filter((m) => m.id !== context.optimisticId));
+      }
       reportError('Failed to send message', (err as Error).message);
     },
   });
@@ -94,7 +148,6 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
     onSuccess: (updated) => {
       if (!activeChatId) return;
       updateMessage(activeChatId, updated.id, updated);
-      streamAndSync(activeChatId, updated);
     },
     onError: (err) => {
       reportError('Failed to retry message', (err as Error).message);
@@ -106,10 +159,17 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       if (!activeChatId) throw new Error('No active chat');
       return backendApi.modifyMessage(activeChatId, messageId, content);
     },
-    onSuccess: (updated) => {
+    // The backend discards every message after the edited one and answers with a brand new
+    // assistant message, so the local list has to be truncated to match.
+    onSuccess: (assistantMessage, { messageId, content }) => {
       if (!activeChatId) return;
-      updateMessage(activeChatId, updated.id, updated);
-      streamAndSync(activeChatId, updated);
+      setMessages(activeChatId, (prev) => {
+        const index = prev.findIndex((m) => m.id === messageId);
+        if (index === -1) return [...prev, assistantMessage];
+        const kept = prev.slice(0, index + 1);
+        kept[index] = { ...kept[index], content };
+        return [...kept, assistantMessage];
+      });
     },
     onError: (err) => {
       reportError('Failed to modify message', (err as Error).message);
