@@ -5,6 +5,7 @@ import { ArrowUp, FileText, FileWarning, Plus, RotateCw, X } from 'lucide-react'
 import Spinner from '../../shared/Spinner/Spinner';
 import { useResources, ResourceItem } from '../../../context/ResourcesContext';
 import { useMessages, useActiveChatActions } from '../../../context/ActiveChatContext';
+import { useChatActions, useChats } from '../../../context/ChatContext';
 import { buildDocumentLinkMarkdown } from '../../../utils/documentLink';
 import styles from './DocumentsModal.module.css';
 
@@ -25,6 +26,8 @@ export default function DocumentsModal({ onCloseAction }: Props) {
   const { items, ensureLoaded, uploadResource, cancelUpload, retryUpload, removeResource } = useResources();
   const { messages } = useMessages();
   const { sendMessage } = useActiveChatActions();
+  const { createChat } = useChatActions();
+  const { activeChatId } = useChats();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [validationError, setValidationError] = useState<string | null>(null);
   const [pendingReplacement, setPendingReplacement] = useState<{ file: File; existingId: string } | null>(null);
@@ -129,7 +132,8 @@ export default function DocumentsModal({ onCloseAction }: Props) {
 
   const handleAddToChat = () => {
     const content = selectedReadyItems.map(item => buildDocumentLinkMarkdown(item.filename, item.resourceId)).join('\n');
-    sendMessage(content);
+    if (activeChatId) sendMessage(content);
+    else createChat(content);
     onCloseAction();
   };
 
