@@ -8,7 +8,10 @@ import {
   useState,
   ReactNode,
 } from 'react';
+import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { createAuthApi, type AuthApi, type AuthRequest } from '../services/authService';
+import { useErrorReporter } from './ErrorContext';
 
 const TOKEN_STORAGE_KEY = 'auth_token';
 // const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL as string;
@@ -25,6 +28,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [request, setRequest] = useState<AuthRequest | null>(null);
   const authApiRef = useRef<AuthApi | null>(null);
   const initRef = useRef(false); // guard against double-run in React Strict Mode
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { reportError } = useErrorReporter();
 
   useEffect(() => {
     if (initRef.current) return;
@@ -61,8 +67,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = async () => {
-    await authApiRef.current?.logout();
-    await authApiRef.current?.loginAsAnonymousUser();
+    try {
+      await authApiRef.current?.logout();
+      await authApiRef.current?.loginAsAnonymousUser();
+      queryClient.clear();
+      router.push('/');
+    } catch (err) {
+      reportError('Failed to log out', (err as Error).message);
+    }
   };
 
   return (
