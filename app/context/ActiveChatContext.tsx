@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, ReactNode } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Message } from '../types/chat';
+import type { StreamOutcome } from '../services/backendService';
 import { useBackendApi } from '../hooks/useBackendApi';
 import { useChats } from './ChatContext';
 import { useErrorReporter } from './ErrorContext';
@@ -18,8 +19,6 @@ interface ActiveChatActions {
   retryMessage: (messageId: string) => Promise<void>;
   modifyMessage: (messageId: string, content: string) => Promise<void>;
 }
-
-// ---------- Contexts ----------
 
 const MessagesStateContext = createContext<MessagesState | undefined>(undefined);
 const ActiveChatActionsContext = createContext<ActiveChatActions | undefined>(undefined);
@@ -39,8 +38,6 @@ function optimisticUserMessage(content: string): Message {
     createdAt: Date.now(),
   };
 }
-
-// ---------- Provider ----------
 
 export function ActiveChatProvider({ children }: { children: ReactNode }) {
   const { activeChatId } = useChats();
@@ -86,29 +83,41 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       for (let attempt = 1; attempt <= MAX_STREAM_ATTEMPTS; attempt++) {
         updateMessage(chatId, messageId, { status: 'pending', content: '' });
 
-        const outcome = await backendApi.streamMessage(chatId, messageId, controller.signal, (token) => {
-          setMessages(chatId, (prev) =>
-            prev.map((m) => (m.id === messageId ? { ...m, content: m.content + token } : m))
-          );
-        });
+        let outcome: StreamOutcome | null = null;
+        try {
+          outcome = await backendApi.streamMessage(chatId, messageId, controller.signal, (token) => {
+            setMessages(chatId, (prev) =>
+              prev.map((m) => (m.id === messageId ? { ...m, content: m.content + token } : m))
+            );
+          });
+        } catch {
+          if (controller.signal.aborted) return;
+          // Stream threw before any terminal event - fall through and ask the backend
+          // what actually happened instead of guessing.
+        }
 
         if (outcome?.status === 'complete') {
           updateMessage(chatId, messageId, { status: 'complete' });
           return;
         }
-        if (outcome?.status === 'failed') {
-          updateMessage(chatId, messageId, { status: 'failed' });
-          reportError('Message failed to generate', outcome.reason ?? 'The reply could not be generated.');
-          return;
-        }
+
+        // Either the stream threw, or it reported 'failed' - don't trust either as final,
+        // refetch and react to whatever the backend actually has.
+        const fresh = await queryClient.fetchQuery({
+          queryKey: messagesQueryKey(chatId),
+          queryFn: () => backendApi.fetchMessages(chatId),
+        });
+        if (controller.signal.aborted) return;
+        const current = fresh.find((m) => m.id === messageId);
+        if (current?.status !== 'pending') return; // backend already resolved it - fetch synced the outcome
+
+        // Still pending -> loop around and open a new stream.
       }
 
       updateMessage(chatId, messageId, { status: 'failed' });
-      reportError('Message failed to stream', 'The connection dropped before the reply finished.');
-    } catch (err) {
+    } catch {
       if (controller.signal.aborted) return;
       updateMessage(chatId, messageId, { status: 'failed' });
-      reportError('Message failed to stream', (err as Error).message);
     } finally {
       if (streamingIdRef.current === messageId) streamingIdRef.current = null;
     }
