@@ -66,6 +66,7 @@ function Message({ message, editDisabled }: MessageProps) {
         <div className={styles.userWrapper}>
           <div className={styles.editWrapper}>
             <MessageInput
+              mode="edit"
               initialValue={message.content}
               autoFocus
               onCancelAction={() => setIsEditing(false)}
