@@ -2,16 +2,17 @@
 
 import { useRef } from 'react';
 import { FileText, Image as ImageIcon, Plus } from 'lucide-react';
+import { useDocumentsModal } from '../../../context/DocumentsModalContext';
 import { useDismissableMenu } from './useDismissableMenu';
 import styles from './MessageInput.module.css';
 
 type AddAttachmentMenuProps = {
   onPickImages: (files: File[]) => void;
-  onPickDocument: () => void;
 };
 
-function AddAttachmentMenu({ onPickImages, onPickDocument }: AddAttachmentMenuProps) {
+function AddAttachmentMenu({ onPickImages }: AddAttachmentMenuProps) {
   const { isOpen, toggle, close, menuRef } = useDismissableMenu<HTMLDivElement>();
+  const { openDocumentsModal } = useDocumentsModal();
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageButtonClick = () => {
@@ -21,7 +22,7 @@ function AddAttachmentMenu({ onPickImages, onPickDocument }: AddAttachmentMenuPr
 
   const handleDocumentButtonClick = () => {
     close();
-    onPickDocument();
+    openDocumentsModal();
   };
 
   const handleImageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -1,7 +1,6 @@
 'use client';
 
 import { memo } from 'react';
-import { useDocumentsModal } from '../../../context/DocumentsModalContext';
 import AddAttachmentMenu from './AddAttachmentMenu';
 import AttachmentList from './AttachmentList';
 import ComposerActions from './ComposerActions';
@@ -19,7 +18,6 @@ type MessageInputProps = {
 };
 
 function MessageInput({ onSendAction, disableSend, initialValue = '', onCancelAction, autoFocus }: MessageInputProps) {
-  const { openDocumentsModal } = useDocumentsModal();
   const isEditVariant = onCancelAction !== undefined;
 
   const { value, attachments, pasteError, textareaRef, handleChange, handlePaste, addImageFiles, removeAttachment, send } =
@@ -43,10 +41,7 @@ function MessageInput({ onSendAction, disableSend, initialValue = '', onCancelAc
   return (
     <div className={`${styles.wrapper} ${isEditVariant ? styles.compact : ''}`}>
       <div className={styles.container}>
-        <AddAttachmentMenu
-          onPickImages={files => addImageFiles(files, { keepNames: true })}
-          onPickDocument={openDocumentsModal}
-        />
+        <AddAttachmentMenu onPickImages={files => addImageFiles(files, { keepNames: true })} />
         <textarea
           ref={textareaRef}
           className={styles.textarea}
