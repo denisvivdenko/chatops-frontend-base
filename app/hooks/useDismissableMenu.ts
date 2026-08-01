@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 
-/** Open/close state for a popover menu that dismisses on outside click or Escape. */
 export function useDismissableMenu<T extends HTMLElement = HTMLDivElement>() {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<T>(null);

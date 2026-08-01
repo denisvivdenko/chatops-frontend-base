@@ -3,7 +3,7 @@
 import { useRef } from 'react';
 import { FileText, Image as ImageIcon, Plus } from 'lucide-react';
 import { useDocumentsModal } from '../../../context/DocumentsModalContext';
-import { useDismissableMenu } from './useDismissableMenu';
+import { useDismissableMenu } from '../../../hooks/useDismissableMenu';
 import styles from './MessageInput.module.css';
 
 type AddAttachmentMenuProps = {
