@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ChatProvider } from './context/ChatContext';
 import { ActiveChatProvider } from './context/ActiveChatContext';
 import { ResourcesProvider } from './context/ResourcesContext';
+import { DocumentsModalProvider } from './context/DocumentsModalContext';
 
 import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -19,7 +20,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <ChatProvider>
             <ActiveChatProvider>
               <ResourcesProvider>
-                {children}
+                <DocumentsModalProvider>
+                  {children}
+                </DocumentsModalProvider>
               </ResourcesProvider>
             </ActiveChatProvider>
           </ChatProvider>

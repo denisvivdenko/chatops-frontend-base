@@ -6,6 +6,7 @@ import Spinner from '../../shared/Spinner/Spinner';
 import { useResources, ResourceItem } from '../../../context/ResourcesContext';
 import { useMessages, useActiveChatActions } from '../../../context/ActiveChatContext';
 import { useChatActions, useChats } from '../../../context/ChatContext';
+import { useDocumentsModal } from '../../../context/DocumentsModalContext';
 import { buildDocumentLinkMarkdown } from '../../../utils/documentLink';
 import styles from './DocumentsModal.module.css';
 
@@ -18,11 +19,8 @@ function validateFile(file: File): string | null {
   return null;
 }
 
-type Props = {
-  onCloseAction: () => void;
-};
-
-export default function DocumentsModal({ onCloseAction }: Props) {
+export default function DocumentsModal() {
+  const { closeDocumentsModal } = useDocumentsModal();
   const { items, ensureLoaded, uploadResource, cancelUpload, retryUpload, removeResource } = useResources();
   const { messages } = useMessages();
   const { sendMessage } = useActiveChatActions();
@@ -89,11 +87,11 @@ export default function DocumentsModal({ onCloseAction }: Props) {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key !== 'Escape') return;
       if (pendingReplacement) handleCancelReplace();
-      else onCloseAction();
+      else closeDocumentsModal();
     }
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onCloseAction, pendingReplacement, handleCancelReplace]);
+  }, [closeDocumentsModal, pendingReplacement, handleCancelReplace]);
 
   const lastMessage = messages[messages.length - 1];
   const disableSend = lastMessage?.status === 'pending' || lastMessage?.status === 'failed';
@@ -134,16 +132,16 @@ export default function DocumentsModal({ onCloseAction }: Props) {
     const content = selectedReadyItems.map(item => buildDocumentLinkMarkdown(item.filename, item.resourceId)).join('\n');
     if (activeChatId) sendMessage(content);
     else createChat(content);
-    onCloseAction();
+    closeDocumentsModal();
   };
 
   return (
     <>
-      <div className={styles.overlay} onClick={onCloseAction}>
+      <div className={styles.overlay} onClick={closeDocumentsModal}>
         <div className={styles.panel} role="dialog" aria-modal="true" aria-label="Documents" onClick={e => e.stopPropagation()}>
           <div className={styles.header}>
             <h2 className={styles.title}>Documents</h2>
-            <button type="button" className={styles.iconButton} aria-label="Close" onClick={onCloseAction}>
+            <button type="button" className={styles.iconButton} aria-label="Close" onClick={closeDocumentsModal}>
               <X size={18} strokeWidth={1.5} />
             </button>
           </div>

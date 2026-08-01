@@ -1,7 +1,7 @@
 'use client';
 
-import { memo, useState } from 'react';
-import DocumentsModal from '../DocumentsModal/DocumentsModal';
+import { memo } from 'react';
+import { useDocumentsModal } from '../../../context/DocumentsModalContext';
 import AddAttachmentMenu from './AddAttachmentMenu';
 import AttachmentList from './AttachmentList';
 import ComposerActions from './ComposerActions';
@@ -19,7 +19,7 @@ type MessageInputProps = {
 };
 
 function MessageInput({ onSendAction, disableSend, initialValue = '', onCancelAction, autoFocus }: MessageInputProps) {
-  const [isDocumentsModalOpen, setIsDocumentsModalOpen] = useState(false);
+  const { openDocumentsModal } = useDocumentsModal();
   const isEditVariant = onCancelAction !== undefined;
 
   const { value, attachments, pasteError, textareaRef, handleChange, handlePaste, addImageFiles, removeAttachment, send } =
@@ -45,7 +45,7 @@ function MessageInput({ onSendAction, disableSend, initialValue = '', onCancelAc
       <div className={styles.container}>
         <AddAttachmentMenu
           onPickImages={files => addImageFiles(files, { keepNames: true })}
-          onPickDocument={() => setIsDocumentsModalOpen(true)}
+          onPickDocument={openDocumentsModal}
         />
         <textarea
           ref={textareaRef}
@@ -66,7 +66,6 @@ function MessageInput({ onSendAction, disableSend, initialValue = '', onCancelAc
       </div>
       <AttachmentList attachments={attachments} onRemove={removeAttachment} />
       {pasteError && <div className={styles.pasteError}>{pasteError}</div>}
-      {isDocumentsModalOpen && <DocumentsModal onCloseAction={() => setIsDocumentsModalOpen(false)} />}
     </div>
   );
 }

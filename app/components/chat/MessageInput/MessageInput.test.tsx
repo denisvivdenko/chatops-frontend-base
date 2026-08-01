@@ -1,11 +1,20 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { DocumentsModalProvider } from '../../../context/DocumentsModalContext';
 import MessageInput from './MessageInput';
+
+function renderMessageInput(props: React.ComponentProps<typeof MessageInput>) {
+  return render(
+    <DocumentsModalProvider>
+      <MessageInput {...props} />
+    </DocumentsModalProvider>
+  );
+}
 
 it('sends the trimmed message on Enter and clears the composer', async () => {
   const user = userEvent.setup();
   const onSendAction = vi.fn();
-  render(<MessageInput onSendAction={onSendAction} />);
+  renderMessageInput({ onSendAction });
 
   const textarea = screen.getByPlaceholderText('Type a message...');
   await user.type(textarea, '  hello world  ');
@@ -18,7 +27,7 @@ it('sends the trimmed message on Enter and clears the composer', async () => {
 it('disables the send button until there is content, and while disableSend is set', async () => {
   const user = userEvent.setup();
   const onSendAction = vi.fn();
-  const { rerender } = render(<MessageInput onSendAction={onSendAction} />);
+  const { rerender } = renderMessageInput({ onSendAction });
 
   const sendButton = screen.getByRole('button', { name: /send message/i });
   expect(sendButton).toBeDisabled();
@@ -27,14 +36,18 @@ it('disables the send button until there is content, and while disableSend is se
   await user.type(textarea, 'hi');
   expect(sendButton).toBeEnabled();
 
-  rerender(<MessageInput onSendAction={onSendAction} disableSend />);
+  rerender(
+    <DocumentsModalProvider>
+      <MessageInput onSendAction={onSendAction} disableSend />
+    </DocumentsModalProvider>
+  );
   expect(sendButton).toBeDisabled();
 });
 
 it('adds an image attachment through the attach menu and can remove it', async () => {
   const user = userEvent.setup();
   const onSendAction = vi.fn();
-  render(<MessageInput onSendAction={onSendAction} />);
+  renderMessageInput({ onSendAction });
 
   await user.click(screen.getByRole('button', { name: /add attachment/i }));
   await user.click(screen.getByRole('menuitem', { name: /image/i }));
@@ -53,7 +66,7 @@ it('seeds the textarea from initialValue in edit mode and cancels on Escape', as
   const user = userEvent.setup();
   const onSendAction = vi.fn();
   const onCancelAction = vi.fn();
-  render(<MessageInput onSendAction={onSendAction} initialValue="draft text" onCancelAction={onCancelAction} />);
+  renderMessageInput({ onSendAction, initialValue: 'draft text', onCancelAction });
 
   const textarea = screen.getByPlaceholderText('Type a message...');
   expect(textarea).toHaveValue('draft text');
