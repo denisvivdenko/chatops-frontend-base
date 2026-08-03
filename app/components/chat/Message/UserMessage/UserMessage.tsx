@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import { Pencil } from 'lucide-react';
-import type { Message } from '../../../types/chat';
-import MessageInput from '../MessageInput/MessageInput';
-import { useActiveChatActions } from '../../../context/ActiveChatContext';
-import { isDocumentOnlyContent } from '../../../utils/documentLink';
-import MarkdownContent from './MarkdownContent';
+import type { Message } from '../../../../types/chat';
+import MessageInput from '../../MessageInput/MessageInput';
+import { useActiveChatActions } from '../../../../context/ActiveChatContext';
+import { isDocumentOnlyContent } from '../../../../utils/documentLink';
+import MarkdownContent from '../MarkdownContent/MarkdownContent';
 import styles from './UserMessage.module.css';
 
 type UserMessageProps = {

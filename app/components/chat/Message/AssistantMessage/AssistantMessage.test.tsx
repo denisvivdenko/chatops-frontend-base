@@ -1,11 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { Message } from '../../../types/chat';
+import type { Message } from '../../../../types/chat';
 import AssistantMessage from './AssistantMessage';
 
 const retryMessage = vi.fn();
 
-vi.mock('../../../context/ActiveChatContext', () => ({
+vi.mock('../../../../context/ActiveChatContext', () => ({
   useActiveChatActions: () => ({ retryMessage }),
 }));
 

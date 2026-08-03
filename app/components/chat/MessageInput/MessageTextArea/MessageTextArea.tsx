@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import styles from './MessageInput.module.css';
+import styles from './MessageTextArea.module.css';
 
 type MessageTextAreaProps = {
   value: string;

@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import { FileText } from 'lucide-react';
-import { DOCUMENT_LINK_SCHEME } from '../../../utils/documentLink';
+import { DOCUMENT_LINK_SCHEME } from '../../../../utils/documentLink';
 import styles from './MarkdownContent.module.css';
 
 const mdComponents = {

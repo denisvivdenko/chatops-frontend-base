@@ -2,11 +2,11 @@
 
 import { memo, useMemo, useState } from 'react';
 import { ArrowUp, X } from 'lucide-react';
-import AddAttachmentMenu from './AddAttachmentMenu';
-import AttachmentList from './AttachmentList';
-import MessageTextArea from './MessageTextArea';
-import { buildMessageContent, splitContentAndAttachments } from './attachments';
-import { useAttachments } from './useAttachments';
+import AddAttachmentMenu from './AddAttachmentMenu/AddAttachmentMenu';
+import AttachmentList from './AttachmentList/AttachmentList';
+import MessageTextArea from './MessageTextArea/MessageTextArea';
+import { buildMessageContent, splitContentAndAttachments } from './attachments/attachments';
+import { useAttachments } from './attachments/useAttachments';
 import styles from './MessageInput.module.css';
 
 type CreateModeProps = { mode?: 'create' };

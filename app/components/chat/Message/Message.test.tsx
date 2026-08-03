@@ -2,13 +2,13 @@ import { render, screen } from '@testing-library/react';
 import type { Message } from '../../../types/chat';
 import MessageComponent from './Message';
 
-vi.mock('./UserMessage', () => ({
+vi.mock('./UserMessage/UserMessage', () => ({
   default: ({ message, editDisabled }: { message: Message; editDisabled?: boolean }) => (
     <div data-testid="user-message" data-id={message.id} data-edit-disabled={String(editDisabled)} />
   ),
 }));
 
-vi.mock('./AssistantMessage', () => ({
+vi.mock('./AssistantMessage/AssistantMessage', () => ({
   default: ({ message }: { message: Message }) => <div data-testid="assistant-message" data-id={message.id} />,
 }));
 

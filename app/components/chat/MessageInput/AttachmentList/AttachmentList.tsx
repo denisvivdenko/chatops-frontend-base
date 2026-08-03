@@ -1,8 +1,8 @@
 'use client';
 
 import { Image as ImageIcon, X } from 'lucide-react';
-import { Attachment } from './attachments';
-import styles from './MessageInput.module.css';
+import { Attachment } from '../attachments/attachments';
+import styles from './AttachmentList.module.css';
 
 type AttachmentListProps = {
   attachments: Attachment[];

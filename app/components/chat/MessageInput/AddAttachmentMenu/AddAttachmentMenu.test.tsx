@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { DocumentsModalProvider, useDocumentsModal } from '../../../context/DocumentsModalContext';
+import { DocumentsModalProvider, useDocumentsModal } from '../../../../context/DocumentsModalContext';
 import AddAttachmentMenu from './AddAttachmentMenu';
 
 function renderMenu(onPickImages = vi.fn()) {

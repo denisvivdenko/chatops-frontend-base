@@ -1,12 +1,12 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { DocumentsModalProvider } from '../../../context/DocumentsModalContext';
-import type { Message } from '../../../types/chat';
+import { DocumentsModalProvider } from '../../../../context/DocumentsModalContext';
+import type { Message } from '../../../../types/chat';
 import UserMessage from './UserMessage';
 
 const modifyMessage = vi.fn();
 
-vi.mock('../../../context/ActiveChatContext', () => ({
+vi.mock('../../../../context/ActiveChatContext', () => ({
   useActiveChatActions: () => ({ modifyMessage }),
 }));
 

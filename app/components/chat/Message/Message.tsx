@@ -2,8 +2,8 @@
 
 import { memo } from 'react';
 import type { Message } from '../../../types/chat';
-import UserMessage from './UserMessage';
-import AssistantMessage from './AssistantMessage';
+import UserMessage from './UserMessage/UserMessage';
+import AssistantMessage from './AssistantMessage/AssistantMessage';
 
 type MessageProps = {
   message: Message;

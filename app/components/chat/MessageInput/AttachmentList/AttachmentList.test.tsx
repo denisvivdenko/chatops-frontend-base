@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Attachment } from './attachments';
+import { Attachment } from '../attachments/attachments';
 import AttachmentList from './AttachmentList';
 
 const attachments: Attachment[] = [

@@ -1,10 +1,10 @@
 'use client';
 
 import { RotateCw } from 'lucide-react';
-import type { Message } from '../../../types/chat';
-import Spinner from '../../shared/Spinner/Spinner';
-import { useActiveChatActions } from '../../../context/ActiveChatContext';
-import MarkdownContent from './MarkdownContent';
+import type { Message } from '../../../../types/chat';
+import Spinner from '../../../shared/Spinner/Spinner';
+import { useActiveChatActions } from '../../../../context/ActiveChatContext';
+import MarkdownContent from '../MarkdownContent/MarkdownContent';
 import styles from './AssistantMessage.module.css';
 
 type AssistantMessageProps = {
