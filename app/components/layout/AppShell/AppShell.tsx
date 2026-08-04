@@ -5,7 +5,7 @@ import DesktopLayout from '../DesktopLayout/DesktopLayout';
 import MobileLayout from '../MobileLayout/MobileLayout';
 import Chat from '../../chat/Chat/Chat';
 import styles from './AppShell.module.css';
-import ErrorBanner from '../../banner/ErrorBanner/ErrorBanner';
+import ErrorBanner from '../../shared/ErrorBanner/ErrorBanner';
 import DocumentsModal from '../../chat/DocumentsModal/DocumentsModal';
 import { useDocumentsModal } from '../../../context/DocumentsModalContext';
 
