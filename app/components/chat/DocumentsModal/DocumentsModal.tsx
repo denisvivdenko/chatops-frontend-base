@@ -101,7 +101,13 @@ export default function DocumentsModal() {
             {hasUnresolvedItems && (
               <span className={styles.footerHint}>Resolve or remove failed uploads before sending.</span>
             )}
-            <button type="button" className={styles.addToChatButton} disabled={addDisabled} onClick={handleAddToChat}>
+            <button
+              type="button"
+              className={styles.addToChatButton}
+              disabled={addDisabled}
+              onClick={handleAddToChat}
+              aria-label="Add to chat"
+            >
               <ArrowUp size={22} strokeWidth={1.5} />
             </button>
           </div>
