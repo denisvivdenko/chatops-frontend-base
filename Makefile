@@ -1,6 +1,7 @@
 IMAGE_NAME = chatops-frontend:latest
 PORT = 3000
 BACKEND_URL = http://localhost:8000/api
+# BACKEND_URL = http://chatops.denysvivdenko.dev/api
 
 .PHONY: build run dev test
 
