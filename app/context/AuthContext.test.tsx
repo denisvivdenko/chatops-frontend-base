@@ -51,7 +51,7 @@ function renderProvider() {
   const clearSpy = vi.spyOn(queryClient, 'clear');
   const utils = render(
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
+      <AuthProvider backendUrl={BASE_URL}>
         <Consumer />
       </AuthProvider>
     </QueryClientProvider>

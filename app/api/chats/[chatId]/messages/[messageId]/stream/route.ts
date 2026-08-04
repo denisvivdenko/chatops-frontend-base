@@ -7,7 +7,7 @@ export async function GET(
   const { chatId, messageId } = await params;
 
   const upstream = await fetch(
-    `http://localhost:8000/chats/${chatId}/messages/${messageId}/stream`,
+    `${process.env.BACKEND_URL}/chats/${chatId}/messages/${messageId}/stream`,
     { cache: 'no-store', headers: { Accept: 'text/event-stream' } },
   );
 

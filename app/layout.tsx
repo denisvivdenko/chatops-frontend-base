@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html className={inter.className}>
       <body>
-        <Providers>
+        <Providers backendUrl={`${process.env.BACKEND_URL}/api`}>
           <AppShell />
         </Providers>
       </body>

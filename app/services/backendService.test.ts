@@ -5,7 +5,7 @@ import { createAuthApi } from './authService';
 let api: BackendApi;
 
 beforeAll(async () => {
-  const authService = await createAuthApi("http://localhost:8000/api", null, () => {}, () => {});
+  const authService = await createAuthApi(`${process.env.BACKEND_URL}/api`, null, () => {}, () => {});
   await authService.loginAsAnonymousUser();
   api = await createBackendApi(authService.request);
 });

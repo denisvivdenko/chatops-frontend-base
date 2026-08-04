@@ -14,8 +14,6 @@ import { createAuthApi, type AuthApi, type AuthRequest } from '../services/authS
 import { useErrorReporter } from './ErrorContext';
 
 const TOKEN_STORAGE_KEY = 'auth_token';
-// const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL as string;
-const BASE_URL = "http://localhost:8000/api"
 
 interface AuthContextValue {
   request: AuthRequest;
@@ -24,7 +22,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children, backendUrl }: { children: ReactNode; backendUrl: string }) {
   const [request, setRequest] = useState<AuthRequest | null>(null);
   const authApiRef = useRef<AuthApi | null>(null);
   const initRef = useRef(false); // guard against double-run in React Strict Mode
@@ -49,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       authApiRef.current?.loginAsAnonymousUser();
     };
 
-    createAuthApi(BASE_URL, initToken, onTokenUpdate, onRefreshTokenError).then(
+    createAuthApi(backendUrl, initToken, onTokenUpdate, onRefreshTokenError).then(
       async (api: AuthApi) => {
         authApiRef.current = api;
 
