@@ -8,13 +8,10 @@ import { useChatActions, useChats } from '../../../context/ChatContext';
 import styles from './Chat.module.css';
 
 export default function Chat() {
-  const { messages, isLoading } = useMessages();
+  const { isLoading, unresolved } = useMessages();
   const { createChat } = useChatActions();
   const { activeChatId } = useChats();
   const { sendMessage } = useActiveChatActions();
-
-  const lastMessage = messages[messages.length - 1];
-  const lastMessageUnresolved = lastMessage?.status === 'pending' || lastMessage?.status === 'failed';
 
   const handleSend = (content: string) => {
     if (activeChatId) {
@@ -35,7 +32,7 @@ export default function Chat() {
         )}
       </div>
       <div className={styles.inputBar}>
-        <MessageInput onSendAction={handleSend} disableSend={lastMessageUnresolved} />
+        <MessageInput onSendAction={handleSend} disableSend={unresolved} />
       </div>
     </div>
   );

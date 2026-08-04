@@ -22,7 +22,10 @@ vi.mock('../../../context/ResourcesContext', () => ({
 }));
 
 vi.mock('../../../context/ActiveChatContext', () => ({
-  useMessages: () => ({ messages }),
+  useMessages: () => {
+    const lastMessage = messages[messages.length - 1];
+    return { unresolved: lastMessage?.status === 'pending' || lastMessage?.status === 'failed' };
+  },
   useActiveChatActions: () => ({ sendMessage }),
 }));
 

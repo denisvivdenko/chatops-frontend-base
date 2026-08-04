@@ -12,6 +12,8 @@ import { NotFoundError, AccessDeniedError } from '../services/errors';
 interface MessagesState {
   messages: Message[];
   isLoading: boolean;
+  unresolved: boolean;
+  editingBlocked: boolean;
 }
 
 interface ActiveChatActions {
@@ -126,6 +128,8 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
   const lastMessage = messages[messages.length - 1];
   const pendingAssistantId =
     lastMessage?.role === 'assistant' && lastMessage.status === 'pending' ? lastMessage.id : null;
+  const unresolved = lastMessage?.status === 'pending' || lastMessage?.status === 'failed';
+  const editingBlocked = lastMessage?.status === 'pending';
 
   // Every path that produces a reply — creating a chat, sending, retrying, modifying, or just
   // opening a chat whose reply is still being generated — ends with a pending assistant message
@@ -199,8 +203,8 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
   });
 
   const state = useMemo<MessagesState>(
-    () => ({ messages, isLoading }),
-    [messages, isLoading]
+    () => ({ messages, isLoading, unresolved, editingBlocked }),
+    [messages, isLoading, unresolved, editingBlocked]
   );
 
   const actions = useMemo<ActiveChatActions>(

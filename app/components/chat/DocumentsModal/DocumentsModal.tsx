@@ -16,7 +16,7 @@ import styles from './DocumentsModal.module.css';
 export default function DocumentsModal() {
   const { closeDocumentsModal } = useDocumentsModal();
   const { items, ensureLoaded, uploadResource, cancelUpload, retryUpload, removeResource } = useResources();
-  const { messages } = useMessages();
+  const { unresolved } = useMessages();
   const { sendMessage } = useActiveChatActions();
   const { createChat } = useChatActions();
   const { activeChatId } = useChats();
@@ -50,9 +50,7 @@ export default function DocumentsModal() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [closeDocumentsModal, pendingReplacement, handleCancelReplace]);
 
-  const lastMessage = messages[messages.length - 1];
-  const disableSend = lastMessage?.status === 'pending' || lastMessage?.status === 'failed';
-  const addDisabled = disableSend || hasUnresolvedItems || selectedReadyItems.length === 0;
+  const addDisabled = unresolved || hasUnresolvedItems || selectedReadyItems.length === 0;
 
   const handleAddToChat = () => {
     const content = selectedReadyItems.map(item => buildDocumentLinkMarkdown(item.filename, item.resourceId)).join('\n');
