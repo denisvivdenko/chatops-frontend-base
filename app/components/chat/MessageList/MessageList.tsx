@@ -2,19 +2,14 @@
 
 import { Virtuoso } from 'react-virtuoso';
 import MessageComponent from '../Message/Message';
-import { useMessages } from '../../../context/chatContext';
+import { useMessages } from '../../../context/ActiveChatContext';
 import styles from './MessageList.module.css';
 
 const Header = () => <div className={styles.spacerTop} />;
 const Footer = () => <div className={styles.spacerBottom} />;
 
 export default function MessageList() {
-  const { messages } = useMessages();
-
-  const lastMessage = messages[messages.length - 1];
-  // Editing is blocked only while a reply is actively streaming, not while one has failed
-  // (modify.md: "Editing after a failed reply is fine").
-  const editingBlocked = lastMessage?.status === 'pending';
+  const { messages, editingBlocked } = useMessages();
 
   return (
     <Virtuoso

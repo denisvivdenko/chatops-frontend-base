@@ -3,7 +3,7 @@
 import { useRef } from 'react';
 import { X, LogOut } from 'lucide-react';
 import ChatList from '../ChatList/ChatList';
-import { useSessionValue } from '../../../context/chatContext';
+import { useAuth } from '../../../context/AuthContext';
 import { useConfirmAction } from '../../../hooks/useConfirmAction';
 import styles from './MobileMenu.module.css';
 
@@ -14,7 +14,7 @@ type Props = {
 };
 
 export default function MobileMenu({ onCloseAction, isClosing, onAnimationEndAction }: Props) {
-  const { logout: onLogout } = useSessionValue();
+  const { logout: onLogout } = useAuth();
   const logoutRef = useRef<HTMLButtonElement>(null);
   const logout = useConfirmAction(logoutRef, onLogout);
 

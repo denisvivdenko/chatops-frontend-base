@@ -1,0 +1,30 @@
+.mdImage {
+  display: block;
+  max-width: 100%;
+  max-height: 10rem;
+  border-radius: 0.75rem;
+  margin: 0.5rem 0;
+}
+
+.documentCard {
+  display: flex;
+  width: fit-content;
+  max-width: 16rem;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.6rem;
+  margin: 0.2rem 0;
+  font-size: 0.85rem;
+  color: var(--color-text);
+}
+
+.documentCard svg {
+  flex-shrink: 0;
+}
+
+.documentName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}

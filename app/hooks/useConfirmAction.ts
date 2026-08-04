@@ -3,7 +3,7 @@
 import { useEffect, useState, type RefObject } from 'react';
 
 /** Arms a button on first click and only fires `onConfirm` on the next one; disarms on outside click or Escape. */
-export function useConfirmAction<T extends HTMLElement>(ref: RefObject<T | null>, onConfirm: () => void) {
+export function useConfirmAction<T extends HTMLElement>(ref: RefObject<T | null>, onConfirm: () => void | Promise<void>) {
   const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
@@ -24,10 +24,10 @@ export function useConfirmAction<T extends HTMLElement>(ref: RefObject<T | null>
     };
   }, [confirming, ref]);
 
-  function handleClick() {
+  async function handleClick() {
     if (confirming) {
       setConfirming(false);
-      onConfirm();
+      await onConfirm();
     } else {
       setConfirming(true);
     }

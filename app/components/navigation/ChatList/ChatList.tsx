@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import ChatItemMenu from '../ChatItemMenu/ChatItemMenu';
-import Spinner from '../../feedback/Spinner/Spinner';
-import { useChats, useChatActions } from '../../../context/chatContext';
+import Spinner from '../../shared/Spinner/Spinner';
+import { useChats, useChatActions } from '../../../context/ChatContext';
 import styles from './ChatList.module.css';
 
 export default function ChatList({ onNavigateAction }: { onNavigateAction?(): void }) {
