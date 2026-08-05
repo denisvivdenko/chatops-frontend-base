@@ -15,6 +15,8 @@ It is the reference client for
 and speaks that API directly: anonymous sessions with silent refresh, the async
 `pending → stream → complete/failed` message lifecycle, and `resource://` document links.
 
+![The desktop chat view — a chat-history sidebar, a sent user message, and the assistant's streamed reply.](docs/screenshot-new-chat.png)
+
 **What you get out of the box**
 
 - A **streaming chat UI** — replies render token-by-token over Server-Sent Events, with
@@ -78,15 +80,28 @@ Then drive it end to end, entirely from the UI:
 
 1. **Type a message and send it.** With no chat open this creates a chat and navigates to
    `/chat/<id>`; the assistant reply streams in token by token.
-2. **Open the documents modal** (the attach control) and **upload a PDF.** It appears with an
-   `uploading` spinner, then `ready`.
+2. **Open the documents modal** (the `+` in the composer) and **upload a PDF.** It appears with
+   an `uploading` spinner, then `ready`.
+
+   ![The Documents modal, with an "Add PDFs" button and an empty "No documents yet." state.](docs/screenshot-add-documents.png)
 3. **Reference it in a message** by selecting it — the message carries a
    `[report.pdf](resource://<id>)` link and the backend routes it to document ingestion.
-4. **Edit an earlier message** to regenerate the conversation from that point, or **retry** a
+4. **Attach an image** from the same `+` menu — it is embedded as a base64 Markdown image and
+   sent to a vision-capable model, which can answer questions about it.
+
+   ![A message with two attached images — a circle and a rectangle — and the assistant describing them.](docs/screenshot-send-images.png)
+5. **Edit an earlier message** to regenerate the conversation from that point, or **retry** a
    reply that failed.
 
 Everything the UI does maps onto the backend's HTTP contract — see the backend README for the
 authoritative endpoint reference.
+
+On a narrow screen the same app switches to a mobile layout — a full-width conversation and a
+slide-in menu behind the hamburger:
+
+| | |
+|---|---|
+| ![Mobile chat view with a hamburger menu and a streamed reply.](docs/screenshot-mobile-new-chat.png) | ![The mobile slide-in menu, with "New chat" and log out.](docs/screenshot-mobile-menu.png) |
 
 ---
 
